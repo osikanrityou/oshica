@@ -1,0 +1,25 @@
+{
+  "app": {
+    "name": "Oshica",
+    "tagline": "推し活の予約・応募・当落・支出を、ひとつに。"
+  },
+  "nav": {
+    "home": "ホーム",
+    "reservations": "予約",
+    "events": "応募",
+    "expenses": "支出",
+    "settings": "設定"
+  },
+  "auth": {
+    "login": "ログイン",
+    "signup": "新規登録",
+    "logout": "ログアウト"
+  },
+  "empty": {
+    "reservations": "予約がまだありません",
+    "events": "応募がまだありません",
+    "results": "当落記録がまだありません",
+    "expenses": "支出がまだありません",
+    "oshis": "推しを登録しましょう"
+  }
+}
