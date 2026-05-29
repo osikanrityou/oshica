@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function GoodsPage() {
@@ -25,7 +25,7 @@ export default async function GoodsPage() {
             <div key={item.id} className="rounded-3xl border bg-white p-4 shadow-sm">
               <p className="font-bold">{item.name}</p>
               <p className="mt-1 text-sm text-zinc-500">
-                {item.price ? `¥${Number(item.price).toLocaleString()}` : "金額未設定"}
+                {item.price ? "¥" + Number(item.price).toLocaleString() : "金額未設定"}
               </p>
               {item.memo ? <p className="mt-2 text-sm">{item.memo}</p> : null}
             </div>
