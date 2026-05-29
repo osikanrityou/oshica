@@ -13,7 +13,7 @@ export function AppShell({ children }: AppShellProps) {
       <main className="flex-1 pb-28">{children}</main>
 
       <Link
-        href="/oshis/new"
+        href="/goods/new"
         className="fixed bottom-28 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-sky-400 text-white shadow-[0_12px_30px_rgba(14,165,233,0.35)] transition hover:scale-105 active:scale-95"
         aria-label="推しを追加"
       >
