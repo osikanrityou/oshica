@@ -1,4 +1,6 @@
-﻿import Link from "next/link";
+﻿
+import { deleteGoods } from "./actions";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function GoodsPage() {
@@ -28,6 +30,16 @@ export default async function GoodsPage() {
                 {item.price ? "¥" + Number(item.price).toLocaleString() : "金額未設定"}
               </p>
               {item.memo ? <p className="mt-2 text-sm">{item.memo}</p> : null}
+
+              <form action={deleteGoods}>
+                <input type="hidden" name="goodsId" value={item.id} />
+                <button
+                  type="submit"
+                  className="mt-3 rounded-full bg-red-500 px-4 py-2 text-sm font-bold text-white"
+                >
+                  削除
+                </button>
+              </form>
             </div>
           ))
         ) : (
