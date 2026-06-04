@@ -1,89 +1,109 @@
-"use client";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { createGoods } from "../actions";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+const FREE_GOODS_LIMIT = 3;
 
-export default function NewGoodsPage() {
-  const router = useRouter();
-  const supabase = createClient() as any;
+export default async function NewGoodsPage() {
+  const supabase = (await createClient()) as any;
 
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [memo, setMemo] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const handleSave = async () => {
-    setLoading(true);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
 
-    if (!user) {
-      alert("ログインしてください");
-      setLoading(false);
-      return;
-    }
+  const { count, error } = await supabase
+    .from("goods")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
 
-    const { error } = await supabase.from("goods").insert({
-      user_id: user.id,
-      name,
-      price: price ? Number(price) : null,
-      memo,
-    });
+  if (error) {
+    throw new Error(error.message);
+  }
 
-    setLoading(false);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    alert("グッズを登録しました");
-    router.push("/goods");
-    router.refresh();
-  };
+  const isLimitReached = (count ?? 0) >= FREE_GOODS_LIMIT;
 
   return (
-    <main className="mx-auto max-w-md px-5 py-8">
-      <h1 className="text-2xl font-bold">グッズ登録</h1>
-
-      <div className="mt-8 space-y-4 rounded-3xl border bg-white p-5">
-        <div>
-          <label className="text-sm font-medium">グッズ名</label>
-          <input
-            className="mt-2 w-full rounded-2xl border px-4 py-3"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+    <main className="min-h-screen bg-sky-50/50 px-5 py-8">
+      <div className="mx-auto max-w-md">
+        <div className="mb-6">
+          <p className="text-sm font-medium text-sky-500">OSHICA</p>
+          <h1 className="mt-2 text-2xl font-bold text-zinc-900">
+            グッズ登録
+          </h1>
+          <p className="mt-2 text-sm text-zinc-500">
+            お気に入りのグッズを記録できます
+          </p>
         </div>
 
-        <div>
-          <label className="text-sm font-medium">値段</label>
-          <input
-            className="mt-2 w-full rounded-2xl border px-4 py-3"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-          />
-        </div>
+        {isLimitReached ? (
+          <section className="rounded-3xl border border-sky-100 bg-white p-6 text-center shadow-sm">
+            <p className="text-sm font-semibold text-zinc-700">
+              無料プランではグッズ登録は3件までです
+            </p>
+            <Link
+              href="/goods"
+              className="mt-5 inline-flex items-center justify-center rounded-full bg-sky-400 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:ring-offset-2"
+            >
+              グッズ一覧へ戻る
+            </Link>
+          </section>
+        ) : (
+          <form
+            action={createGoods}
+            className="space-y-5 rounded-3xl border border-sky-100 bg-white p-5 shadow-sm"
+          >
+            <label className="block">
+              <span className="text-sm font-semibold text-zinc-700">名前</span>
+              <input
+                name="name"
+                type="text"
+                required
+                className="mt-2 w-full rounded-2xl border border-sky-100 px-4 py-3 text-zinc-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              />
+            </label>
 
-        <div>
-          <label className="text-sm font-medium">メモ</label>
-          <textarea
-            className="mt-2 min-h-28 w-full rounded-2xl border px-4 py-3"
-            value={memo}
-            onChange={(e) => setMemo(e.target.value)}
-          />
-        </div>
+            <label className="block">
+              <span className="text-sm font-semibold text-zinc-700">金額</span>
+              <input
+                name="price"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                className="mt-2 w-full rounded-2xl border border-sky-100 px-4 py-3 text-zinc-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              />
+            </label>
 
-        <button
-          onClick={handleSave}
-          disabled={loading || !name}
-          className="w-full rounded-2xl bg-sky-400 py-3 font-bold text-white"
-        >
-          {loading ? "登録中..." : "登録する"}
-        </button>
+            <label className="block">
+              <span className="text-sm font-semibold text-zinc-700">メモ</span>
+              <textarea
+                name="memo"
+                rows={5}
+                className="mt-2 w-full resize-none rounded-2xl border border-sky-100 px-4 py-3 text-zinc-900 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+              />
+            </label>
+
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <Link
+                href="/goods"
+                className="rounded-full px-4 py-2 text-sm font-semibold text-zinc-500 transition hover:bg-sky-50 hover:text-zinc-700"
+              >
+                キャンセル
+              </Link>
+              <button
+                type="submit"
+                className="rounded-full bg-sky-400 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:ring-offset-2"
+              >
+                登録
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </main>
   );
