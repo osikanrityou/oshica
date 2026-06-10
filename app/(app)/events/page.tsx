@@ -1,93 +1,81 @@
-"use client";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { deleteEvent } from "./actions";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+export default async function EventsPage() {
+  const supabase = (await createClient()) as any;
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export default function EventsPage() {
-  
-  const supabase = createClient() as any;
-  const [title, setTitle] = useState("");
-  const [eventDate, setEventDate] = useState("");
-  const [memo, setMemo] = useState("");
-  const [loading, setLoading] = useState(false);
+  if (!user) {
+    redirect("/login");
+  }
 
-  const handleSave = async () => {
-    try {
-      setLoading(true);
-
-      // ログインユーザー取得
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      console.log("ログインユーザー:", user);
-
-      if (!user) {
-        alert("ログインしてください");
-        return;
-      }
-
-      // Supabaseへ保存
-      const { error } = await supabase.from("events").insert({
-        title,
-        event_date: eventDate,
-        memo,
-        user_id: user.id,
-      });
-
-      if (error) {
-        console.error(error);
-        alert("保存失敗");
-        return;
-      }
-
-      alert("イベントを保存しました");
-
-      setTitle("");
-      setEventDate("");
-      setMemo("");
-    } catch (err) {
-      console.error(err);
-      alert("エラーが発生しました");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const { data: events } = await supabase
+  .from("events")
+  .select("id, title, event_date, memo")
+  .order("created_at", { ascending: false });
   return (
-    <div className="max-w-md mx-auto p-6 space-y-4">
-      <h1 className="text-2xl font-bold">イベント登録</h1>
+    <main className="mx-auto max-w-md px-5 py-8">
+      <h1 className="text-2xl font-bold">イベント一覧</h1>
+      <p className="mt-2 text-sm text-zinc-500">
+        イベントや締切を管理できます
+      </p>
 
-      <input
-        type="text"
-        placeholder="イベント名"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="w-full border rounded p-2"
-      />
+      <div className="mt-6 space-y-3">
+        {events && events.length > 0 ? (
+          events.map((item: any) => (
+            <div
+              key={item.id}
+              className="rounded-3xl border bg-white p-4 shadow-sm"
+            >
+              <p className="font-bold">{item.title}</p>
 
-      <input
-        type="date"
-        value={eventDate}
-        onChange={(e) => setEventDate(e.target.value)}
-        className="w-full border rounded p-2"
-      />
+              {item.event_date && (
+                <p className="mt-1 text-sm text-zinc-500">
+                  開催日：{item.event_date}
+                </p>
+              )}
 
-      <textarea
-        placeholder="メモ"
-        value={memo}
-        onChange={(e) => setMemo(e.target.value)}
-        className="w-full border rounded p-2"
-      />
 
-      <button
-        onClick={handleSave}
-        disabled={loading}
-        className="w-full bg-pink-500 text-white rounded p-2"
+              {item.memo && <p className="mt-2 text-sm">{item.memo}</p>}
+
+              <div className="mt-3 flex gap-2">
+                <Link
+                  href={`/events/${item.id}/edit`}
+                  className="rounded-full bg-sky-400 px-4 py-2 text-sm font-bold text-white"
+                >
+                  編集
+                </Link>
+
+                <form action={deleteEvent}>
+                  <input type="hidden" name="eventId" value={item.id} />
+                  <button
+                    type="submit"
+                    className="rounded-full bg-red-500 px-4 py-2 text-sm font-bold text-white"
+                  >
+                    削除
+                  </button>
+                </form>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-zinc-500">
+            イベントを登録しましょう
+          </p>
+        )}
+      </div>
+
+      <Link
+        href="/events/new"
+        className="fixed bottom-28 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-sky-500 text-3xl text-white shadow-lg"
       >
-        {loading ? "保存中..." : "保存"}
-      </button>
-    </div>
+        +
+      </Link>
+    </main>
   );
 }
