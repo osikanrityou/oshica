@@ -18,7 +18,7 @@ export default async function NewEventPage() {
   }
 
   const { count } = await supabase
-    .from("event_applications")
+    .from("events" as any)
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
 

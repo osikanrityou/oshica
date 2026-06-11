@@ -8,8 +8,9 @@ const FREE_EVENTS_LIMIT = 3;
 
 export async function createEvent(formData: FormData) {
   const title = formData.get("title");
-  const eventDate = formData.get("eventDate");
-  const memo = formData.get("memo");
+const eventDate = formData.get("eventDate");
+const deadline = formData.get("deadline");
+const memo = formData.get("memo");
 
   if (typeof title !== "string" || title.trim().length === 0) {
     redirect("/events/new");
@@ -32,16 +33,20 @@ const supabase = (await createClient()) as any;
   if ((count ?? 0) >= FREE_EVENTS_LIMIT) {
     redirect("/events/new");
   }
-
- const { error } = await supabase.from("events").insert({
+const { error } = await supabase.from("events").insert({
   title: title.trim(),
   event_date:
     typeof eventDate === "string" && eventDate.length > 0
       ? eventDate
       : "2026-01-01",
+  deadline:
+    typeof deadline === "string" && deadline.length > 0
+      ? deadline
+      : null,
   memo: typeof memo === "string" ? memo : "",
   user_id: user.id,
 });
+
 if (error) {
   throw new Error(error.message);
 }
@@ -53,7 +58,8 @@ export async function updateEvent(formData: FormData) {
   const eventId = formData.get("eventId");
   const title = formData.get("title");
   const eventDate = formData.get("eventDate");
-  const memo = formData.get("memo");
+  const deadline = formData.get("deadline");
+const memo = formData.get("memo");
 
   const supabase = (await createClient()) as any;
 
@@ -64,16 +70,22 @@ export async function updateEvent(formData: FormData) {
   if (!user) {
     redirect("/login");
   }
+await supabase
+  .from("events")
+ .update({
+  title,
+  event_date:
+    typeof eventDate === "string" && eventDate.length > 0
+      ? eventDate
+      : "2026-01-01",
 
-  await supabase
-    .from("events")
-    .update({
-      title,
-      event_date: eventDate || null,
-      memo: memo || null,
-    })
-    .eq("id", eventId)
-    .eq("user_id", user.id);
+  deadline:
+    typeof deadline === "string" && deadline.length > 0
+      ? deadline
+      : null,
+
+  memo: typeof memo === "string" ? memo : "",
+})
 
   revalidatePath("/events");
   redirect("/events");

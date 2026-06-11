@@ -1,3 +1,4 @@
+
 import { AppShell } from "@/components/layout/AppShell";
 import { requireAuthUser } from "@/lib/supabase/session";
 
