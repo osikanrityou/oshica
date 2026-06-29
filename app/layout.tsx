@@ -1,7 +1,8 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { NuqsAdapter } from "nuqs/adapters/next/app"
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,7 +34,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#f43f5e",
+  themeColor: "#E9F0FF",
 };
 
 export default function RootLayout({
@@ -48,6 +49,21 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <NuqsAdapter>{children}</NuqsAdapter>
+
+        <Toaster
+          position="top-center"
+          richColors={false}
+          toastOptions={{
+            classNames: {
+              toast:
+                "rounded-2xl border border-oshica-border bg-white text-oshica-text shadow-lg",
+              title: "text-sm font-bold",
+              description: "text-xs text-oshica-primary",
+              success: "border-oshica-border",
+              error: "border-red-200 bg-red-50 text-red-500",
+            },
+          }}
+        />
       </body>
     </html>
   );

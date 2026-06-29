@@ -1,13 +1,18 @@
+import { Trophy } from "lucide-react";
+
 import { MobilePage } from "@/components/layout/MobilePage";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { LotteryResultList } from "@/features/lottery-result/components/LotteryResultList";
 import { createClient } from "@/lib/supabase/server";
 import { LotteryRepository } from "@/server/repositories/lottery-repository";
 
-export const metadata = { title: "当落" };
+export const metadata = {
+  title: "当落",
+};
 
 export default async function ResultsPage() {
   const supabase = await createClient();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -24,9 +29,19 @@ export default async function ResultsPage() {
   }
 
   return (
-    <MobilePage>
-      <PageHeader title="当落" description="抽選結果の記録" />
-      <LotteryResultList items={items} />
+    <MobilePage className="bg-oshica-bg pb-32">
+      <OshicaPageHeader
+        label="Lottery"
+        title="当落"
+        description="応募したイベントの結果を記録できます"
+        icon={<Trophy className="h-5 w-5" />}
+        actionHref="/results/new"
+        actionLabel="追加する ›"
+      />
+
+      <section className="mt-6">
+        <LotteryResultList items={items} />
+      </section>
     </MobilePage>
   );
 }

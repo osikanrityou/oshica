@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { Wallet } from "lucide-react";
 
-import { EmptyState } from "@/components/shared/EmptyState";
-import { Card } from "@/components/ui/card";
+import { OshicaCard } from "@/components/oshica/OshicaCard";
+import { DeleteButton } from "@/components/shared/DeleteButton";
 import { ROUTES } from "@/lib/constants/routes";
 import { formatYen } from "@/lib/utils";
 import type { Tables } from "@/lib/supabase/database.types";
+import { deleteExpense } from "@/app/(app)/expenses/actions";
+import { OshicaEmptyState } from "@/components/oshica/OshicaEmptyState";
 
 type ExpenseListProps = {
   items: Tables<"expenses">[];
@@ -13,11 +16,13 @@ type ExpenseListProps = {
 export function ExpenseList({ items }: ExpenseListProps) {
   if (items.length === 0) {
     return (
-      <EmptyState
-        title="支出がまだありません"
-        actionLabel="支出を追加"
-        actionHref={ROUTES.expenseNew}
-      />
+     <OshicaEmptyState
+  icon={<Wallet className="h-6 w-6" />}
+  title="まだ支出がありません"
+  description="推し活の支出を記録しましょう"
+  href={ROUTES.expenseNew}
+  actionLabel="支出を追加"
+/>
     );
   }
 
@@ -25,15 +30,37 @@ export function ExpenseList({ items }: ExpenseListProps) {
     <ul className="space-y-3">
       {items.map((item) => (
         <li key={item.id}>
-          <Link href={`${ROUTES.expenses}/${item.id}`}>
-            <Card className="flex items-center justify-between hover:border-rose-200">
-              <div>
-                <p className="font-medium">{item.title}</p>
-                <p className="text-xs text-zinc-500">{item.spent_at}</p>
+          <OshicaCard className="px-4 py-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:scale-[0.98]">
+            <div className="flex items-center justify-between gap-3">
+              <Link href={`${ROUTES.expenses}/${item.id}`} className="min-w-0 flex-1">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+                    <Wallet className="h-5 w-5" />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate font-black text-oshica-text">
+                      {item.title}
+                    </p>
+                    <p className="mt-1 text-xs font-medium text-oshica-primary">
+                      {item.spent_at}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                <p className="text-lg font-black text-oshica-secondary">
+                  {formatYen(item.amount)}
+                </p>
+
+                <form action={deleteExpense}>
+                  <input type="hidden" name="expenseId" value={item.id} />
+                  <DeleteButton message="この支出を削除しますか？" />
+                </form>
               </div>
-              <p className="font-semibold text-rose-500">{formatYen(item.amount)}</p>
-            </Card>
-          </Link>
+            </div>
+          </OshicaCard>
         </li>
       ))}
     </ul>

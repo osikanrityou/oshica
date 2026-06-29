@@ -1,13 +1,91 @@
-import { MobilePage } from "@/components/layout/MobilePage";
-import { PageHeader } from "@/components/layout/PageHeader";
+import Link from "next/link";
+import { Wallet } from "lucide-react";
+
+import { OshicaCard } from "@/components/oshica/OshicaCard";
+import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
+import { createExpense } from "../actions";
 
 export const metadata = { title: "支出を追加" };
 
 export default function NewExpensePage() {
   return (
-    <MobilePage>
-      <PageHeader title="支出を追加" />
-      <p className="text-sm text-zinc-500">Phase 1 でフォームを実装します。</p>
-    </MobilePage>
+    <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
+      <OshicaPageHeader
+        label="Expense"
+        title="支出登録"
+        description="推し活に使った金額を記録できます"
+        icon={<Wallet className="h-5 w-5" />}
+      />
+
+      <form action={createExpense} className="mt-5 space-y-5">
+        <OshicaCard className="space-y-4">
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">
+              タイトル
+            </span>
+            <input
+              name="title"
+              required
+              className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">金額</span>
+
+            <div className="relative mt-2">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-oshica-primary">
+                ¥
+              </span>
+
+              <input
+                type="number"
+                name="amount"
+                required
+                className="w-full rounded-2xl border border-oshica-border bg-white py-3 pl-9 pr-4 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              />
+            </div>
+          </label>
+        </OshicaCard>
+
+        <OshicaCard>
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">日付</span>
+            <input
+              type="date"
+              name="spentAt"
+              className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            />
+          </label>
+        </OshicaCard>
+
+        <OshicaCard>
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">メモ</span>
+            <textarea
+              name="memo"
+              rows={4}
+              className="mt-2 w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            />
+          </label>
+        </OshicaCard>
+
+        <div className="flex items-center justify-between gap-3 pt-2">
+          <Link
+            href="/expenses"
+            className="rounded-full px-4 py-2 text-sm font-bold text-oshica-primary"
+          >
+            キャンセル
+          </Link>
+
+          <button
+            type="submit"
+            className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95"
+          >
+            登録する
+          </button>
+        </div>
+      </form>
+    </main>
   );
 }

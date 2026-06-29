@@ -1,94 +1,323 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { Package, CalendarDays, Wallet } from "lucide-react";
+import { redirect } from "next/navigation";
+import {
+  Bell,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Package,
+  Pencil,
+  Wallet,
+} from "lucide-react";
 
-import { MobilePage } from "@/components/layout/MobilePage";
 import { createClient } from "@/lib/supabase/server";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+function getDaysLeft(dateText: string) {
+  const today = new Date();
+  const target = new Date(dateText);
+
+  today.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+
+  return Math.ceil(
+    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+  );
+}
+
+function daysLabel(dateText: string) {
+  const days = getDaysLeft(dateText);
+
+  if (days === 0) return "今日";
+  if (days > 0) return `あと${days}日`;
+  return `${Math.abs(days)}日前`;
+}
 
 export default async function OshiDetailPage({ params }: Props) {
   const { id } = await params;
-  const supabase = await createClient();
+  const supabase = (await createClient()) as any;
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) notFound();
+  if (!user) redirect("/login");
 
-  const { data: item } = await supabase
+  const { data: oshi } = await supabase
     .from("oshis")
     .select("*")
-    .eq("user_id", user.id)
     .eq("id", id)
-    .maybeSingle();
+    .eq("user_id", user.id)
+    .single();
 
-  if (!item) notFound();
+  if (!oshi) redirect("/dashboard");
 
-  const oshi = item as any;
+  const { data: goods } = await supabase
+    .from("goods")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("oshi_id", id)
+    .order("created_at", { ascending: false });
+
+  const { data: events } = await supabase
+    .from("events")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("oshi_id", id)
+    .order("event_date", { ascending: true });
+
+  const goodsCount = goods?.length ?? 0;
+  const eventCount = events?.length ?? 0;
+
+  const goodsTotal =
+    goods?.reduce((sum: number, item: any) => sum + (item.price ?? 0), 0) ?? 0;
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const schedules = [
+    ...(events?.map((item: any) => ({
+      id: `event-${item.id}`,
+      type: "イベント",
+      title: item.title,
+      date: item.deadline ?? item.event_date,
+      href: `/events/${item.id}/edit`,
+    })) ?? []),
+    ...(goods
+      ?.filter((item: any) => item.deadline)
+      .map((item: any) => ({
+        id: `goods-${item.id}`,
+        type: "グッズ締切",
+        title: item.name,
+        date: item.deadline,
+        href: `/goods/${item.id}/edit`,
+      })) ?? []),
+  ]
+    .filter((item: any) => item.date >= today)
+    .sort((a: any, b: any) => a.date.localeCompare(b.date))
+    .slice(0, 5);
+
+  const nearestSchedule = schedules[0];
 
   return (
-    <MobilePage>
-      <main className="mx-auto max-w-md px-5 py-8">
-        <div className="rounded-[2rem] bg-white p-6 shadow-sm">
-          <div className="flex flex-col items-center text-center">
-            <div className="h-28 w-28 overflow-hidden rounded-full bg-sky-50">
-              {oshi.image_url ? (
-                <img
-                  src={oshi.image_url}
-                  alt={oshi.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-4xl text-sky-400">
-                  ♡
-                </div>
-              )}
+    <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
+      <header className="flex items-center justify-between">
+        <Link
+          href="/oshis"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-secondary shadow-sm"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
+
+        <p className="max-w-48 truncate text-sm font-black tracking-wide text-oshica-secondary">
+          {oshi.name}
+        </p>
+
+        <Link
+          href="/notifications"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-secondary shadow-sm"
+        >
+          <Bell className="h-5 w-5" />
+        </Link>
+      </header>
+
+      <section className="mt-7 rounded-[2rem] bg-white p-6 text-center shadow-sm">
+        <div className="mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-oshica-bg text-5xl shadow-sm ring-4 ring-white">
+          {oshi.image_url ? (
+            <img
+              src={oshi.image_url}
+              alt={oshi.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span>♡</span>
+          )}
+        </div>
+
+        <h1 className="mt-5 text-2xl font-black text-oshica-text">
+          {oshi.name}
+        </h1>
+
+        <div className="mt-3 flex justify-center">
+          <span className="rounded-full bg-oshica-bg px-4 py-1 text-xs font-bold text-oshica-primary">
+            {oshi.category ?? "ジャンル未設定"}
+          </span>
+        </div>
+
+        {oshi.memo && (
+          <p className="mt-4 text-sm leading-relaxed text-oshica-primary">
+            {oshi.memo}
+          </p>
+        )}
+
+        <Link
+          href={`/oshis/${oshi.id}/edit`}
+          className="mt-4 inline-flex items-center gap-1 rounded-full bg-oshica-bg px-3 py-1.5 text-xs font-bold text-oshica-primary"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          編集
+        </Link>
+      </section>
+
+      <section className="mt-5 grid grid-cols-3 gap-3">
+        <div className="rounded-3xl border border-oshica-border bg-white p-4 text-center shadow-sm">
+          <div className="flex items-center justify-center gap-1">
+            <CalendarDays className="h-4 w-4 text-oshica-primary" />
+            <p className="text-xs font-bold text-oshica-primary">予定</p>
+          </div>
+          <p className="mt-2 text-lg font-black text-oshica-text">
+            {eventCount}件
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-oshica-border bg-white p-4 text-center shadow-sm">
+          <div className="flex items-center justify-center gap-1">
+            <Package className="h-4 w-4 text-oshica-primary" />
+            <p className="text-xs font-bold text-oshica-primary">グッズ</p>
+          </div>
+          <p className="mt-2 text-lg font-black text-oshica-text">
+            {goodsCount}件
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-oshica-border bg-white p-4 text-center shadow-sm">
+          <div className="flex items-center justify-center gap-1">
+            <Wallet className="h-4 w-4 text-oshica-primary" />
+            <p className="text-xs font-bold text-oshica-primary">合計</p>
+          </div>
+          <p className="mt-2 text-base font-black text-oshica-text">
+            ¥{goodsTotal.toLocaleString()}
+          </p>
+        </div>
+      </section>
+
+      {nearestSchedule && (
+        <section className="mt-7">
+          <h2 className="mb-3 text-sm font-black text-oshica-text">
+            次の予定
+          </h2>
+
+          <Link
+            href={nearestSchedule.href}
+            className="block rounded-[2rem] bg-gradient-to-r from-[#526B94] to-[#2C3855] p-5 text-white shadow-sm"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-[#BFCDE0]">
+                  {nearestSchedule.type}
+                </p>
+                <p className="mt-2 text-lg font-black">
+                  {nearestSchedule.title}
+                </p>
+                <p className="mt-1 text-sm text-[#E9F0FF]">
+                  {nearestSchedule.date}
+                </p>
+              </div>
+
+              <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-black text-[#2C3855]">
+                {daysLabel(nearestSchedule.date)}
+              </span>
             </div>
+          </Link>
+        </section>
+      )}
 
-            <h1 className="mt-4 text-2xl font-bold text-zinc-900">
-              {oshi.name}
-            </h1>
-           <div className="mt-4">
-  <Link
-    href={`/oshis/${oshi.id}/edit`}
-    className="inline-flex rounded-2xl border border-sky-200 px-4 py-2 text-sm font-medium text-sky-500"
-  >
-    編集する
-  </Link>
-</div>
-
-            <p className="mt-2 rounded-full bg-sky-50 px-4 py-1 text-sm font-medium text-sky-500">
-              {oshi.category || "未設定"}
-            </p>
-
-            <p className="mt-4 text-sm leading-6 text-zinc-500">
-              {oshi.memo || "推しメモ未設定"}
-            </p>
-          </div>
+      <section className="mt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-black text-oshica-text">イベント</h2>
+          <Link href="/events/new" className="text-xs font-bold text-oshica-primary">
+            追加する ›
+          </Link>
         </div>
 
-        <div className="mt-6 grid grid-cols-3 gap-3">
-          <div className="rounded-3xl bg-white p-4 text-center shadow-sm">
-            <p className="text-xl"><Package className="mx-auto h-6 w-6 text-sky-500" /></p>
-            <p className="mt-1 text-lg font-bold">0</p>
-            <p className="text-xs text-zinc-400">グッズ</p>
-          </div>
+        <div className="space-y-3">
+          {events && events.length > 0 ? (
+            events.map((item: any) => (
+              <Link
+                key={item.id}
+                href={`/events/${item.id}/edit`}
+                className="flex items-center justify-between rounded-3xl border border-oshica-border bg-white p-4 shadow-sm"
+              >
+                <div>
+                  <p className="font-bold text-oshica-text">{item.title}</p>
+                  <p className="mt-1 text-xs text-oshica-primary">
+                    開催日：{item.event_date ?? "未設定"}
+                  </p>
+                  {item.deadline && (
+                    <p className="mt-1 text-xs text-oshica-primary">
+                      締切：{item.deadline}
+                    </p>
+                  )}
+                </div>
 
-          <div className="rounded-3xl bg-white p-4 text-center shadow-sm">
-            <p className="text-xl"><CalendarDays className="mx-auto h-6 w-6 text-sky-500" /></p>
-            <p className="mt-1 text-lg font-bold">0</p>
-            <p className="text-xs text-zinc-400">イベント</p>
-          </div>
-
-          <div className="rounded-3xl bg-white p-4 text-center shadow-sm">
-            <p className="text-xl"><Wallet className="mx-auto h-6 w-6 text-sky-500" /></p>
-            <p className="mt-1 text-lg font-bold">0</p>
-            <p className="text-xs text-zinc-400">支出</p>
-          </div>
+                <ChevronRight className="h-5 w-5 text-oshica-primary" />
+              </Link>
+            ))
+          ) : (
+            <div className="rounded-3xl border border-dashed border-oshica-border bg-white p-6 text-center">
+              <p className="font-bold text-oshica-text">
+                イベントを登録しましょう
+              </p>
+              <p className="mt-1 text-sm text-oshica-primary">
+                右下の＋から追加できます
+              </p>
+            </div>
+          )}
         </div>
-      </main>
-    </MobilePage>
+      </section>
+
+      <section className="mt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-black text-oshica-text">グッズ</h2>
+          <Link href="/goods/new" className="text-xs font-bold text-oshica-primary">
+            追加する ›
+          </Link>
+        </div>
+
+        <div className="space-y-3">
+          {goods && goods.length > 0 ? (
+            goods.map((item: any) => (
+              <Link
+                key={item.id}
+                href={`/goods/${item.id}/edit`}
+                className="flex items-center justify-between rounded-3xl border border-oshica-border bg-white p-4 shadow-sm"
+              >
+                <div>
+                  <p className="font-bold text-oshica-text">{item.name}</p>
+                  <p className="mt-1 text-sm font-black text-oshica-secondary">
+                    {item.price
+                      ? `¥${Number(item.price).toLocaleString("ja-JP")}`
+                      : "金額未設定"}
+                  </p>
+
+                  {item.release_date && (
+                    <p className="mt-1 text-xs text-oshica-primary">
+                      発売日：{item.release_date}
+                    </p>
+                  )}
+
+                  <span className="mt-2 inline-flex rounded-full bg-oshica-bg px-2 py-1 text-[10px] font-bold text-oshica-secondary">
+                    {item.status ?? "未予約"}
+                  </span>
+                </div>
+
+                <ChevronRight className="h-5 w-5 text-oshica-primary" />
+              </Link>
+            ))
+          ) : (
+            <div className="rounded-3xl border border-dashed border-oshica-border bg-white p-6 text-center">
+              <p className="font-bold text-oshica-text">
+                グッズを登録しましょう
+              </p>
+              <p className="mt-1 text-sm text-oshica-primary">
+                右下の＋から追加できます
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
   );
 }

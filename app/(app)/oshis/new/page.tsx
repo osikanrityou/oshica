@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { Heart } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
+import { OshicaCard } from "@/components/oshica/OshicaCard";
+import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { createClient } from "@/lib/supabase/client";
 
 export default function NewOshiPage() {
@@ -35,7 +40,7 @@ export default function NewOshiPage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      alert("ログインしてください");
+      toast.error("ログインしてください");
       setLoading(false);
       return;
     }
@@ -51,7 +56,7 @@ export default function NewOshiPage() {
         .upload(filePath, imageFile);
 
       if (uploadError) {
-        alert(uploadError.message);
+        toast.error(uploadError.message);
         setLoading(false);
         return;
       }
@@ -75,26 +80,28 @@ export default function NewOshiPage() {
     setLoading(false);
 
     if (error) {
-      alert(error.message);
+      toast.error(error.message);
       return;
     }
 
-    alert("推しを登録しました");
+    toast.success("推しを登録しました");
+
     router.push("/oshis");
     router.refresh();
   };
 
   return (
-    <main className="mx-auto max-w-md px-5 py-8">
-      <p className="text-sm font-semibold text-sky-500">OshiCA</p>
-      <h1 className="mt-2 text-2xl font-bold">推しを登録</h1>
-      <p className="mt-2 text-sm text-zinc-500">
-        グッズ・イベント・当落を管理する推しを追加しましょう。
-      </p>
+    <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
+      <OshicaPageHeader
+        label="Oshi"
+        title="推し登録"
+        description="予定・グッズ・支出を管理する推しを追加できます"
+        icon={<Heart className="h-5 w-5" />}
+      />
 
-      <div className="mt-8 space-y-5 rounded-3xl border border-sky-50 bg-white p-5 shadow-sm">
-        <div className="flex flex-col items-center">
-          <label className="flex h-28 w-28 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-sky-50 text-sky-400 shadow-inner">
+      <section className="mt-5 space-y-5">
+        <OshicaCard className="py-5 text-center">
+          <label className="mx-auto flex h-24 w-24 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-oshica-bg text-oshica-primary shadow-sm">
             {previewUrl ? (
               <img
                 src={previewUrl}
@@ -102,7 +109,7 @@ export default function NewOshiPage() {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <span className="text-3xl">♡</span>
+              <Heart className="h-9 w-9" />
             )}
 
             <input
@@ -113,49 +120,68 @@ export default function NewOshiPage() {
             />
           </label>
 
-          <p className="mt-3 text-xs text-zinc-400">
-            画像をタップして選択
+          <p className="mt-3 inline-flex rounded-full bg-oshica-bg px-4 py-2 text-xs font-bold text-oshica-primary">
+            画像を選ぶ
           </p>
-        </div>
+        </OshicaCard>
 
-        <div>
-          <label className="text-sm font-medium">推しの名前</label>
-          <input
-            className="mt-2 w-full rounded-2xl border border-zinc-200 px-4 py-3 outline-none focus:border-sky-300"
-            placeholder="例：Aくん"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
+        <OshicaCard className="space-y-4">
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">
+              推しの名前
+            </span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="例：Aくん"
+              className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            />
+          </label>
 
-        <div>
-          <label className="text-sm font-medium">ジャンル</label>
-          <input
-            className="mt-2 w-full rounded-2xl border border-zinc-200 px-4 py-3 outline-none focus:border-sky-300"
-            placeholder="例：VTuber、アイドル、アニメ"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          />
-        </div>
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">
+              ジャンル
+            </span>
+            <input
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="例：VTuber、アイドル、アニメ"
+              className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            />
+          </label>
+        </OshicaCard>
 
-        <div>
-          <label className="text-sm font-medium">メモ</label>
-          <textarea
-            className="mt-2 min-h-28 w-full rounded-2xl border border-zinc-200 px-4 py-3 outline-none focus:border-sky-300"
-            placeholder="誕生日、所属、好きなところなど"
-            value={memo}
-            onChange={(e) => setMemo(e.target.value)}
-          />
-        </div>
+        <OshicaCard>
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">メモ</span>
+            <textarea
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+              rows={4}
+              placeholder="誕生日、所属、好きなところなど"
+              className="mt-2 w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            />
+          </label>
+        </OshicaCard>
 
-        <button
-          onClick={handleSave}
-          disabled={loading || !name}
-          className="w-full rounded-2xl bg-sky-400 py-3 font-bold text-white shadow-[0_10px_24px_rgba(14,165,233,0.25)] transition active:scale-95 disabled:opacity-50"
-        >
-          {loading ? "登録中..." : "登録する"}
-        </button>
-      </div>
+        <div className="flex items-center justify-between gap-3 pt-2">
+          <Link
+            href="/oshis"
+            className="rounded-full px-4 py-2 text-sm font-bold text-oshica-primary"
+          >
+            キャンセル
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={loading || !name}
+            className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-50"
+          >
+            {loading ? "登録中..." : "登録する"}
+          </button>
+        </div>
+      </section>
     </main>
   );
 }

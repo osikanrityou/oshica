@@ -1,33 +1,148 @@
-import { notFound } from "next/navigation";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { ArrowLeft, Wallet } from "lucide-react";
 
-import { MobilePage } from "@/components/layout/MobilePage";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { formatYen } from "@/lib/utils";
+import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { createClient } from "@/lib/supabase/server";
+import { updateExpense } from "../actions";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{
+    id: string;
+  }>;
+};
 
-export default async function ExpenseDetailPage({ params }: Props) {
+export default async function EditExpensePage({ params }: Props) {
   const { id } = await params;
-  const supabase = await createClient();
+
+  const supabase = (await createClient()) as any;
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) notFound();
+  if (!user) {
+    redirect("/login");
+  }
 
-  const { data: item } = await supabase
+  const { data: expense } = await supabase
     .from("expenses")
     .select("*")
-    .eq("user_id", user.id)
     .eq("id", id)
-    .maybeSingle();
+    .eq("user_id", user.id)
+    .single();
 
-  if (!item) notFound();
+  if (!expense) {
+    redirect("/expenses");
+  }
 
   return (
-    <MobilePage>
-      <PageHeader title={item.title} description={formatYen(item.amount)} />
-    </MobilePage>
+    <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
+      <div className="mb-6 flex items-center justify-between">
+        <Link
+          href="/expenses"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm"
+        >
+          <ArrowLeft className="h-5 w-5 text-oshica-secondary" />
+        </Link>
+
+        <h1 className="text-lg font-black">支出を編集</h1>
+
+        <div className="w-10" />
+      </div>
+
+      <OshicaCard className="py-4 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+          <Wallet className="h-7 w-7" />
+        </div>
+
+        <p className="mt-3 text-base font-black text-oshica-text">
+          {expense.title}
+        </p>
+
+        <p className="mt-1 text-[11px] font-medium text-oshica-primary">
+          登録内容を編集
+        </p>
+      </OshicaCard>
+
+      <form action={updateExpense} className="mt-5 space-y-5">
+        <input type="hidden" name="expenseId" value={expense.id} />
+
+        <OshicaCard className="space-y-4">
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">
+              タイトル
+            </span>
+
+            <input
+              name="title"
+              defaultValue={expense.title}
+              required
+              className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">金額</span>
+
+            <div className="relative mt-2">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-oshica-primary">
+                ¥
+              </span>
+
+              <input
+                type="number"
+                name="amount"
+                defaultValue={expense.amount}
+                required
+                className="w-full rounded-2xl border border-oshica-border bg-white py-3 pl-10 pr-4 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              />
+            </div>
+          </label>
+        </OshicaCard>
+
+        <OshicaCard>
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">日付</span>
+
+            <input
+              type="date"
+              name="spentAt"
+              defaultValue={expense.spent_at ?? ""}
+              className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            />
+          </label>
+        </OshicaCard>
+
+        <OshicaCard>
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">メモ</span>
+
+            <textarea
+              name="memo"
+              defaultValue={expense.memo ?? ""}
+              rows={4}
+              className="mt-2 w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            />
+          </label>
+        </OshicaCard>
+
+        <div className="flex items-center justify-between gap-3 pt-2">
+          <Link
+            href="/expenses"
+            className="rounded-full px-4 py-2 text-sm font-bold text-oshica-primary"
+          >
+            キャンセル
+          </Link>
+
+          <button
+            type="submit"
+            className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95"
+          >
+            保存する
+          </button>
+        </div>
+      </form>
+    </main>
   );
 }

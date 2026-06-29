@@ -11,7 +11,7 @@ export async function createEvent(formData: FormData) {
 const eventDate = formData.get("eventDate");
 const deadline = formData.get("deadline");
 const memo = formData.get("memo");
-
+const oshiId = formData.get("oshiId");
   if (typeof title !== "string" || title.trim().length === 0) {
     redirect("/events/new");
   }
@@ -44,6 +44,10 @@ const { error } = await supabase.from("events").insert({
       ? deadline
       : null,
   memo: typeof memo === "string" ? memo : "",
+  oshi_id:
+  typeof oshiId === "string" && oshiId.length > 0
+    ? oshiId
+    : null,
   user_id: user.id,
 });
 
@@ -59,7 +63,8 @@ export async function updateEvent(formData: FormData) {
   const title = formData.get("title");
   const eventDate = formData.get("eventDate");
   const deadline = formData.get("deadline");
-const memo = formData.get("memo");
+  const memo = formData.get("memo");
+  const oshiId = formData.get("oshiId");
 
   const supabase = (await createClient()) as any;
 
@@ -70,24 +75,30 @@ const memo = formData.get("memo");
   if (!user) {
     redirect("/login");
   }
-await supabase
-  .from("events")
- .update({
-  title,
-  event_date:
-    typeof eventDate === "string" && eventDate.length > 0
-      ? eventDate
-      : "2026-01-01",
 
-  deadline:
-    typeof deadline === "string" && deadline.length > 0
-      ? deadline
-      : null,
-
-  memo: typeof memo === "string" ? memo : "",
-})
+  await supabase
+    .from("events")
+    .update({
+      title,
+      event_date:
+        typeof eventDate === "string" && eventDate.length > 0
+          ? eventDate
+          : "2026-01-01",
+      deadline:
+        typeof deadline === "string" && deadline.length > 0
+          ? deadline
+          : null,
+      memo: typeof memo === "string" ? memo : "",
+      oshi_id:
+  typeof oshiId === "string" && oshiId.length > 0
+    ? oshiId
+    : null,
+    })
+    .eq("id", eventId)
+    .eq("user_id", user.id);
 
   revalidatePath("/events");
+  revalidatePath("/dashboard");
   redirect("/events");
 }
 

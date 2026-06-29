@@ -1,7 +1,40 @@
 ﻿import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  Package,
+  ChevronRight,
+  ShoppingBag,
+  Clock,
+  Plus,
+} from "lucide-react";
+
 import { createClient } from "@/lib/supabase/server";
 import { deleteGoods } from "./actions";
+import { DeleteButton } from "@/components/shared/DeleteButton";
+import { OshicaCard } from "@/components/oshica/OshicaCard";
+import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
+import { OshicaSectionHeader } from "@/components/oshica/OshicaSectionHeader";
+import { OshicaEmptyState } from "@/components/oshica/OshicaEmptyState";
+
+function getDaysLeft(dateText: string) {
+  const today = new Date();
+  const target = new Date(dateText);
+
+  today.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+
+  return Math.ceil(
+    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+  );
+}
+
+function dateLabel(dateText: string) {
+  const days = getDaysLeft(dateText);
+
+  if (days === 0) return "今日";
+  if (days > 0) return `あと${days}日`;
+  return `${Math.abs(days)}日前`;
+}
 
 export default async function GoodsPage() {
   const supabase = (await createClient()) as any;
@@ -21,70 +54,131 @@ export default async function GoodsPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto max-w-md px-5 py-8">
-      <h1 className="text-2xl font-bold">グッズ一覧</h1>
+    <main className="mx-auto max-w-md bg-[#E9F0FF] px-5 pb-32 pt-8 text-[#001117]">
+     <OshicaPageHeader
+  label="Goods"
+  title="グッズ一覧"
+  description="予約・発売日・締切をまとめて管理できます"
+  icon={<ShoppingBag className="h-5 w-5" />}
+/>
+<section className="mt-6 grid grid-cols-2 gap-3">
+  <OshicaCard>
+    <p className="text-xs font-bold text-oshica-primary">
+      登録グッズ
+    </p>
 
-      <p className="mt-2 text-sm text-zinc-500">
-        登録したグッズを管理できます
-      </p>
+    <p className="mt-2 text-2xl font-black text-oshica-text">
+      {goods?.length ?? 0}件
+    </p>
+  </OshicaCard>
 
-      <div className="mt-6 space-y-3">
-        {goods && goods.length > 0 ? (
-          goods.map((item: any) => (
-            <div
-              key={item.id}
-              className="rounded-3xl border bg-white p-4 shadow-sm"
-            >
-              <p className="font-bold">{item.name}</p>
+  <OshicaCard>
+    <p className="text-xs font-bold text-oshica-primary">
+      締切あり
+    </p>
 
-              <p className="mt-1 text-sm text-zinc-500">
-                {item.price
-                  ? "¥" + Number(item.price).toLocaleString("ja-JP")
-                  : "金額未設定"}
-              </p>
+    <p className="mt-2 text-2xl font-black text-oshica-text">
+      {goods?.filter((g:any)=>g.deadline).length ?? 0}件
+    </p>
+  </OshicaCard>
+</section>
 
-              {item.memo && (
-                <p className="mt-2 text-sm">{item.memo}</p>
-              )}
+      <section className="mt-6">
+        <OshicaSectionHeader
+          title="登録したグッズ"
+          href="/goods/new"
+          actionLabel="追加する ›"
+        />
 
-              <div className="mt-3 flex gap-2">
-                <Link
-                  href={`/goods/${item.id}/edit`}
-                  className="rounded-full bg-sky-400 px-4 py-2 text-sm font-bold text-white"
-                >
-                  編集
-                </Link>
-
-                <form action={deleteGoods}>
-                  <input
-                    type="hidden"
-                    name="goodsId"
-                    value={item.id}
-                  />
-
-                  <button
-                    type="submit"
-                    className="rounded-full bg-red-500 px-4 py-2 text-sm font-bold text-white"
+        <div className="space-y-3">
+          {goods && goods.length > 0 ? (
+            goods.map((item: any) => (
+              <OshicaCard key={item.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <Link
+                    href={`/goods/${item.id}/edit`}
+                    className="flex-1"
                   >
-                    削除
-                  </button>
-                </form>
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-sm text-zinc-500">
-            グッズを登録しましょう
-          </p>
-        )}
-      </div>
+                    <p className="font-black text-[#001117]">
+                      {item.name}
+                    </p>
 
-      <Link
-        href="/goods/new"
-        className="fixed bottom-28 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-sky-500 text-3xl text-white shadow-lg"
-      >
-        +
-      </Link>
+                    <p className="mt-1 text-sm font-black text-oshica-secondary">
+                      {item.price
+                        ? `¥${Number(item.price).toLocaleString("ja-JP")}`
+                        : "金額未設定"}
+                    </p>
+
+                    {item.deadline && (
+                      <p className="mt-2 text-xs text-[#60799E]">
+                        締切：{item.deadline}
+                      </p>
+                    )}
+
+                    {item.release_date && (
+                      <p className="mt-1 text-xs text-[#60799E]">
+                        発売日：{item.release_date}
+                      </p>
+                    )}
+
+                   <span className="mt-2 inline-flex rounded-full bg-oshica-bg px-2 py-1 text-[10px] font-bold text-oshica-secondary">
+  {item.status ?? "未予約"}
+</span>
+
+                    {item.memo && (
+                      <p className="mt-2 text-sm text-[#2C3855]">
+                        {item.memo}
+                      </p>
+                    )}
+                  </Link>
+
+                  <div className="flex flex-col items-end gap-3">
+                    {item.deadline && (
+                      <span className="rounded-full bg-[#E9F0FF] px-3 py-1 text-xs font-black text-[#2C3855]">
+                        {dateLabel(item.deadline)}
+                      </span>
+                    )}
+
+                    <Link
+                      href={`/goods/${item.id}/edit`}
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E9F0FF] text-[#60799E]"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#E9F0FF] px-3 py-1 text-xs font-bold text-[#60799E]">
+                    <Package className="h-3.5 w-3.5" />
+                    グッズ
+                  </span>
+
+                  <form action={deleteGoods}>
+                    <input
+                      type="hidden"
+                      name="goodsId"
+                      value={item.id}
+                    />
+
+                    <DeleteButton
+                      message={`${item.name}を削除しますか？`}
+                    />
+                  </form>
+                </div>
+              </OshicaCard>
+            ))
+          ) : (
+         <OshicaEmptyState
+  icon={<Package className="h-6 w-6" />}
+  title="まだグッズがありません"
+  description="予約したグッズを登録しましょう"
+  href="/goods/new"
+  actionLabel="グッズを登録"
+/>
+          )}
+        </div>
+      </section>
     </main>
   );
 }
