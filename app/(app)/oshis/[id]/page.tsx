@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { DeleteButton } from "@/components/shared/DeleteButton";
+import { deleteOshi } from "./actions";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -316,7 +318,25 @@ export default async function OshiDetailPage({ params }: Props) {
               </p>
             </div>
           )}
-        </div>
+               </div>
+      </section>
+
+      <section className="mt-8">
+        <form action={deleteOshi} className="flex justify-center">
+          <input type="hidden" name="oshiId" value={oshi.id} />
+
+          <DeleteButton
+            message={`${oshi.name}を削除しますか？
+
+この推しに登録されている
+・グッズ
+・イベント
+・支出
+もすべて削除されます。
+
+この操作は元に戻せません。`}
+          />
+        </form>
       </section>
     </main>
   );
