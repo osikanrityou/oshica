@@ -1,38 +1,67 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Wallet } from "lucide-react";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
+import { createClient } from "@/lib/supabase/server";
 import { createExpense } from "../actions";
 
 export const metadata = { title: "支出を追加" };
 
-export default function NewExpensePage() {
+export default async function NewExpensePage() {
+  const supabase = (await createClient()) as any;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const { data: oshis } = await supabase
+    .from("oshis")
+    .select("id, name")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
       <OshicaPageHeader
         label="Expense"
         title="支出登録"
-        description="推し活に使った金額を記録できます"
+        description="Freeプランでは推し1人につき3件まで登録できます"
         icon={<Wallet className="h-5 w-5" />}
       />
 
       <form action={createExpense} className="mt-5 space-y-5">
         <OshicaCard className="space-y-4">
           <label className="block">
-            <span className="text-sm font-bold text-oshica-text">
-              タイトル
-            </span>
+            <span className="text-sm font-bold text-oshica-text">推し</span>
+            <select
+              name="oshiId"
+              required
+              className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            >
+              <option value="">推しを選択</option>
+              {oshis?.map((oshi: any) => (
+                <option key={oshi.id} value={oshi.id}>
+                  {oshi.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">タイトル</span>
             <input
               name="title"
               required
-              className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
 
           <label className="block">
             <span className="text-sm font-bold text-oshica-text">金額</span>
-
             <div className="relative mt-2">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-oshica-primary">
                 ¥
@@ -42,7 +71,7 @@ export default function NewExpensePage() {
                 type="number"
                 name="amount"
                 required
-                className="w-full rounded-2xl border border-oshica-border bg-white py-3 pl-9 pr-4 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="block w-full min-w-0 rounded-2xl border border-oshica-border bg-white py-3 pl-9 pr-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </div>
           </label>
@@ -54,7 +83,7 @@ export default function NewExpensePage() {
             <input
               type="date"
               name="spentAt"
-              className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
         </OshicaCard>
@@ -65,7 +94,7 @@ export default function NewExpensePage() {
             <textarea
               name="memo"
               rows={4}
-              className="mt-2 w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block w-full min-w-0 resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
         </OshicaCard>

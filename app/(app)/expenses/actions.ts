@@ -2,14 +2,24 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+
 import { createClient } from "@/lib/supabase/server";
+
+const FREE_PER_OSHI_LIMIT = 3;
 
 export async function createExpense(formData: FormData) {
   const title = formData.get("title");
   const amount = formData.get("amount");
   const spentAt = formData.get("spentAt");
+  const memo = formData.get("memo");
+  const oshiId = formData.get("oshiId");
 
-  if (typeof title !== "string" || title.trim().length === 0) {
+  if (
+    typeof title !== "string" ||
+    title.trim().length === 0 ||
+    typeof oshiId !== "string" ||
+    oshiId.length === 0
+  ) {
     redirect("/expenses/new");
   }
 
@@ -19,8 +29,18 @@ export async function createExpense(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
+  if (!user) redirect("/login");
+
+  const { count, error: countError } = await supabase
+    .from("expenses")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("oshi_id", oshiId);
+
+  if (countError) throw new Error(countError.message);
+
+  if ((count ?? 0) >= FREE_PER_OSHI_LIMIT) {
+    redirect("/expenses/new");
   }
 
   const { error } = await supabase.from("expenses").insert({
@@ -30,12 +50,13 @@ export async function createExpense(formData: FormData) {
       typeof spentAt === "string" && spentAt.length > 0
         ? spentAt
         : new Date().toISOString().slice(0, 10),
+    notes: typeof memo === "string" && memo.trim().length > 0 ? memo.trim() : null,
+    category: "other",
+    oshi_id: oshiId,
     user_id: user.id,
   });
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
@@ -51,9 +72,7 @@ export async function deleteExpense(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
   await supabase
     .from("expenses")
@@ -64,13 +83,14 @@ export async function deleteExpense(formData: FormData) {
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
   redirect("/expenses");
-}// ← deleteExpense の終わり
+}
 
 export async function updateExpense(formData: FormData) {
   const expenseId = formData.get("expenseId");
   const title = formData.get("title");
   const amount = formData.get("amount");
   const spentAt = formData.get("spentAt");
+  const oshiId = formData.get("oshiId");
 
   const supabase = (await createClient()) as any;
 
@@ -78,9 +98,7 @@ export async function updateExpense(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
   await supabase
     .from("expenses")
@@ -91,6 +109,8 @@ export async function updateExpense(formData: FormData) {
         typeof spentAt === "string" && spentAt.length > 0
           ? spentAt
           : new Date().toISOString().slice(0, 10),
+      oshi_id:
+        typeof oshiId === "string" && oshiId.length > 0 ? oshiId : null,
     })
     .eq("id", expenseId)
     .eq("user_id", user.id);

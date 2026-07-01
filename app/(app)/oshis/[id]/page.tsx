@@ -6,17 +6,18 @@ import {
   ChevronLeft,
   ChevronRight,
   Package,
+  PawPrint,
   Pencil,
   Wallet,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
-import { DeleteButton } from "@/components/shared/DeleteButton";
-import { deleteOshi } from "./actions";
 
 type Props = {
   params: Promise<{ id: string }>;
 };
+
+const FREE_PER_OSHI_LIMIT = 3;
 
 function getDaysLeft(dateText: string) {
   const today = new Date();
@@ -71,11 +72,29 @@ export default async function OshiDetailPage({ params }: Props) {
     .eq("oshi_id", id)
     .order("event_date", { ascending: true });
 
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    .toISOString()
+    .slice(0, 10);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    .toISOString()
+    .slice(0, 10);
+
+  const { data: expenses } = await supabase
+    .from("expenses")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("oshi_id", id)
+    .gte("spent_at", monthStart)
+    .lte("spent_at", monthEnd)
+    .order("spent_at", { ascending: false });
+
   const goodsCount = goods?.length ?? 0;
   const eventCount = events?.length ?? 0;
+  const expenseCount = expenses?.length ?? 0;
 
-  const goodsTotal =
-    goods?.reduce((sum: number, item: any) => sum + (item.price ?? 0), 0) ?? 0;
+  const expenseTotal =
+    expenses?.reduce((sum: number, item: any) => sum + item.amount, 0) ?? 0;
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -126,7 +145,7 @@ export default async function OshiDetailPage({ params }: Props) {
       </header>
 
       <section className="mt-7 rounded-[2rem] bg-white p-6 text-center shadow-sm">
-        <div className="mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-oshica-bg text-5xl shadow-sm ring-4 ring-white">
+        <div className="mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-oshica-bg shadow-sm ring-4 ring-white">
           {oshi.image_url ? (
             <img
               src={oshi.image_url}
@@ -134,7 +153,7 @@ export default async function OshiDetailPage({ params }: Props) {
               className="h-full w-full object-cover"
             />
           ) : (
-            <span>♡</span>
+            <PawPrint className="h-12 w-12 text-oshica-primary" />
           )}
         </div>
 
@@ -165,34 +184,35 @@ export default async function OshiDetailPage({ params }: Props) {
 
       <section className="mt-5 grid grid-cols-3 gap-3">
         <div className="rounded-3xl border border-oshica-border bg-white p-4 text-center shadow-sm">
-          <div className="flex items-center justify-center gap-1">
-            <CalendarDays className="h-4 w-4 text-oshica-primary" />
-            <p className="text-xs font-bold text-oshica-primary">予定</p>
-          </div>
+          <CalendarDays className="mx-auto h-4 w-4 text-oshica-primary" />
+          <p className="mt-1 text-xs font-bold text-oshica-primary">予定</p>
           <p className="mt-2 text-lg font-black text-oshica-text">
-            {eventCount}件
+            {eventCount}/{FREE_PER_OSHI_LIMIT}
           </p>
         </div>
 
         <div className="rounded-3xl border border-oshica-border bg-white p-4 text-center shadow-sm">
-          <div className="flex items-center justify-center gap-1">
-            <Package className="h-4 w-4 text-oshica-primary" />
-            <p className="text-xs font-bold text-oshica-primary">グッズ</p>
-          </div>
+          <Package className="mx-auto h-4 w-4 text-oshica-primary" />
+          <p className="mt-1 text-xs font-bold text-oshica-primary">グッズ</p>
           <p className="mt-2 text-lg font-black text-oshica-text">
-            {goodsCount}件
+            {goodsCount}/{FREE_PER_OSHI_LIMIT}
           </p>
         </div>
 
         <div className="rounded-3xl border border-oshica-border bg-white p-4 text-center shadow-sm">
-          <div className="flex items-center justify-center gap-1">
-            <Wallet className="h-4 w-4 text-oshica-primary" />
-            <p className="text-xs font-bold text-oshica-primary">合計</p>
-          </div>
-          <p className="mt-2 text-base font-black text-oshica-text">
-            ¥{goodsTotal.toLocaleString()}
+          <Wallet className="mx-auto h-4 w-4 text-oshica-primary" />
+          <p className="mt-1 text-xs font-bold text-oshica-primary">支出</p>
+          <p className="mt-2 text-lg font-black text-oshica-text">
+            {expenseCount}/{FREE_PER_OSHI_LIMIT}
           </p>
         </div>
+      </section>
+
+      <section className="mt-5 rounded-[2rem] bg-white p-5 shadow-sm">
+        <p className="text-xs font-black text-oshica-primary">今月の支出</p>
+        <p className="mt-2 text-2xl font-black text-oshica-text">
+          ¥{expenseTotal.toLocaleString()}
+        </p>
       </section>
 
       {nearestSchedule && (
@@ -203,22 +223,22 @@ export default async function OshiDetailPage({ params }: Props) {
 
           <Link
             href={nearestSchedule.href}
-            className="block rounded-[2rem] bg-gradient-to-r from-[#526B94] to-[#2C3855] p-5 text-white shadow-sm"
+            className="block rounded-[2rem] bg-oshica-secondary p-5 text-white shadow-sm"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-bold text-[#BFCDE0]">
+                <p className="text-xs font-bold text-oshica-border">
                   {nearestSchedule.type}
                 </p>
                 <p className="mt-2 text-lg font-black">
                   {nearestSchedule.title}
                 </p>
-                <p className="mt-1 text-sm text-[#E9F0FF]">
+                <p className="mt-1 text-sm text-oshica-bg">
                   {nearestSchedule.date}
                 </p>
               </div>
 
-              <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-black text-[#2C3855]">
+              <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-black text-oshica-secondary">
                 {daysLabel(nearestSchedule.date)}
               </span>
             </div>
@@ -229,7 +249,10 @@ export default async function OshiDetailPage({ params }: Props) {
       <section className="mt-8">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-black text-oshica-text">イベント</h2>
-          <Link href="/events/new" className="text-xs font-bold text-oshica-primary">
+          <Link
+            href="/events/new"
+            className="text-xs font-bold text-oshica-primary"
+          >
             追加する ›
           </Link>
         </div>
@@ -273,7 +296,10 @@ export default async function OshiDetailPage({ params }: Props) {
       <section className="mt-8">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-black text-oshica-text">グッズ</h2>
-          <Link href="/goods/new" className="text-xs font-bold text-oshica-primary">
+          <Link
+            href="/goods/new"
+            className="text-xs font-bold text-oshica-primary"
+          >
             追加する ›
           </Link>
         </div>
@@ -318,25 +344,7 @@ export default async function OshiDetailPage({ params }: Props) {
               </p>
             </div>
           )}
-               </div>
-      </section>
-
-      <section className="mt-8">
-        <form action={deleteOshi} className="flex justify-center">
-          <input type="hidden" name="oshiId" value={oshi.id} />
-
-          <DeleteButton
-            message={`${oshi.name}を削除しますか？
-
-この推しに登録されている
-・グッズ
-・イベント
-・支出
-もすべて削除されます。
-
-この操作は元に戻せません。`}
-          />
-        </form>
+        </div>
       </section>
     </main>
   );

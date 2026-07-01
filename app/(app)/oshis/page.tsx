@@ -1,15 +1,24 @@
-import { CalendarDays, ChevronRight, Droplet, Heart, Package, Plus } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronRight,
+  Droplet,
+  Package,
+  PawPrint,
+  Plus,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
+import { OshicaEmptyState } from "@/components/oshica/OshicaEmptyState";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { createClient } from "@/lib/supabase/server";
-import { OshicaEmptyState } from "@/components/oshica/OshicaEmptyState";
 
 export const metadata = {
   title: "推し一覧",
 };
+
+const FREE_PER_OSHI_LIMIT = 3;
 
 export default async function OshiPage() {
   const supabase = (await createClient()) as any;
@@ -56,8 +65,8 @@ export default async function OshiPage() {
       <OshicaPageHeader
         label="Oshi"
         title="推し一覧"
-        description="登録した推しを管理できます"
-        icon={<Heart className="h-5 w-5" />}
+        description="Freeプランでは推し3人まで登録できます"
+        icon={<PawPrint className="h-5 w-5" />}
       />
 
       <div className="mt-6 flex items-center justify-between">
@@ -76,10 +85,12 @@ export default async function OshiPage() {
         {oshis && oshis.length > 0 ? (
           oshis.map((oshi: any) => {
             const eventCount =
-              events?.filter((item: any) => item.oshi_id === oshi.id).length ?? 0;
+              events?.filter((item: any) => item.oshi_id === oshi.id).length ??
+              0;
 
             const goodsCount =
-              goods?.filter((item: any) => item.oshi_id === oshi.id).length ?? 0;
+              goods?.filter((item: any) => item.oshi_id === oshi.id).length ??
+              0;
 
             const expenseTotal =
               expenses
@@ -100,7 +111,7 @@ export default async function OshiPage() {
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
-                          <Heart className="h-6 w-6 text-oshica-primary" />
+                          <PawPrint className="h-7 w-7 text-oshica-primary" />
                         </div>
                       )}
                     </div>
@@ -116,15 +127,15 @@ export default async function OshiPage() {
                         </p>
                       )}
 
-                      <div className="mt-2 flex flex-wrap gap-3 text-xs font-bold text-oshica-primary">
+                      <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-oshica-primary">
                         <span className="flex items-center gap-1">
                           <CalendarDays className="h-3.5 w-3.5" />
-                          予定 {eventCount}件
+                          予定 {eventCount}/{FREE_PER_OSHI_LIMIT}
                         </span>
 
                         <span className="flex items-center gap-1">
                           <Package className="h-3.5 w-3.5" />
-                          グッズ {goodsCount}件
+                          グッズ {goodsCount}/{FREE_PER_OSHI_LIMIT}
                         </span>
 
                         <span className="flex items-center gap-1">
@@ -135,21 +146,21 @@ export default async function OshiPage() {
                     </div>
 
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-oshica-bg">
-  <ChevronRight className="h-4 w-4 text-oshica-primary" />
-</div>
+                      <ChevronRight className="h-4 w-4 text-oshica-primary" />
+                    </div>
                   </div>
                 </OshicaCard>
               </Link>
             );
           })
         ) : (
-        <OshicaEmptyState
-  icon={<Heart className="h-6 w-6" />}
-  title="まだ推しが登録されていません"
-  description="まずは推しを登録しましょう"
-  href="/oshis/new"
-  actionLabel="推しを登録"
-/>
+          <OshicaEmptyState
+            icon={<PawPrint className="h-6 w-6" />}
+            title="まだ推しが登録されていません"
+            description="まずは推しを登録しましょう"
+            href="/oshis/new"
+            actionLabel="推しを登録"
+          />
         )}
       </div>
     </main>

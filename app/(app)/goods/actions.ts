@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+
 import { createClient } from "@/lib/supabase/server";
 
-const FREE_GOODS_LIMIT = 3;
+const FREE_PER_OSHI_LIMIT = 3;
 
 export async function createGoods(formData: FormData) {
   const name = formData.get("name");
@@ -15,7 +16,12 @@ export async function createGoods(formData: FormData) {
   const memo = formData.get("memo");
   const oshiId = formData.get("oshiId");
 
-  if (typeof name !== "string" || name.trim().length === 0) {
+  if (
+    typeof name !== "string" ||
+    name.trim().length === 0 ||
+    typeof oshiId !== "string" ||
+    oshiId.length === 0
+  ) {
     redirect("/goods/new");
   }
 
@@ -25,57 +31,40 @@ export async function createGoods(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
   const { count, error: countError } = await supabase
     .from("goods")
     .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .eq("oshi_id", oshiId);
 
-  if (countError) {
-    throw new Error(countError.message);
-  }
+  if (countError) throw new Error(countError.message);
 
-  if ((count ?? 0) >= FREE_GOODS_LIMIT) {
+  if ((count ?? 0) >= FREE_PER_OSHI_LIMIT) {
     redirect("/goods/new");
   }
 
-  const normalizedPrice =
+  const priceNumber =
     typeof price === "string" && price.trim().length > 0
       ? Number(price)
       : null;
 
-  const priceValue =
-    normalizedPrice !== null && Number.isFinite(normalizedPrice)
-      ? normalizedPrice
-      : null;
-
   const { error } = await supabase.from("goods").insert({
     name: name.trim(),
-    price: priceValue,
-    deadline:
-      typeof deadline === "string" && deadline.length > 0 ? deadline : null,
+    price: priceNumber !== null && Number.isFinite(priceNumber) ? priceNumber : null,
+    deadline: typeof deadline === "string" && deadline.length > 0 ? deadline : null,
     release_date:
       typeof releaseDate === "string" && releaseDate.length > 0
         ? releaseDate
         : null,
-    status:
-      typeof status === "string" && status.length > 0 ? status : "未予約",
-    memo:
-   
-     typeof memo === "string" && memo.trim().length > 0 ? memo.trim() : null,
-     oshi_id:
-  typeof oshiId === "string" && oshiId.length > 0
-    ? oshiId
-    : null,
+    status: typeof status === "string" && status.length > 0 ? status : "未予約",
+    memo: typeof memo === "string" && memo.trim().length > 0 ? memo.trim() : null,
+    oshi_id: oshiId,
     user_id: user.id,
   });
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   revalidatePath("/goods");
   revalidatePath("/dashboard");
@@ -85,9 +74,7 @@ export async function createGoods(formData: FormData) {
 export async function deleteGoods(formData: FormData) {
   const goodsId = formData.get("goodsId");
 
-  if (typeof goodsId !== "string") {
-    return;
-  }
+  if (typeof goodsId !== "string") return;
 
   const supabase = (await createClient()) as any;
 
@@ -95,15 +82,9 @@ export async function deleteGoods(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
-  await supabase
-    .from("goods")
-    .delete()
-    .eq("id", goodsId)
-    .eq("user_id", user.id);
+  await supabase.from("goods").delete().eq("id", goodsId).eq("user_id", user.id);
 
   revalidatePath("/goods");
   revalidatePath("/dashboard");
@@ -118,11 +99,9 @@ export async function updateGoods(formData: FormData) {
   const releaseDate = formData.get("releaseDate");
   const status = formData.get("status");
   const memo = formData.get("memo");
-const oshiId = formData.get("oshiId");
+  const oshiId = formData.get("oshiId");
 
-  if (typeof goodsId !== "string" || typeof name !== "string") {
-    return;
-  }
+  if (typeof goodsId !== "string" || typeof name !== "string") return;
 
   const supabase = (await createClient()) as any;
 
@@ -130,9 +109,7 @@ const oshiId = formData.get("oshiId");
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
   await supabase
     .from("goods")
@@ -142,20 +119,15 @@ const oshiId = formData.get("oshiId");
         typeof price === "string" && price.trim().length > 0
           ? Number(price)
           : null,
-      deadline:
-        typeof deadline === "string" && deadline.length > 0 ? deadline : null,
+      deadline: typeof deadline === "string" && deadline.length > 0 ? deadline : null,
       release_date:
         typeof releaseDate === "string" && releaseDate.length > 0
           ? releaseDate
           : null,
-      status:
-        typeof status === "string" && status.length > 0 ? status : "未予約",
-      memo:
-        typeof memo === "string" && memo.trim().length > 0 ? memo.trim() : null,
-        oshi_id:
-  typeof oshiId === "string" && oshiId.length > 0
-    ? oshiId
-    : null,
+      status: typeof status === "string" && status.length > 0 ? status : "未予約",
+      memo: typeof memo === "string" && memo.trim().length > 0 ? memo.trim() : null,
+      oshi_id:
+        typeof oshiId === "string" && oshiId.length > 0 ? oshiId : null,
     })
     .eq("id", goodsId)
     .eq("user_id", user.id);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, Heart, ImagePlus } from "lucide-react";
+import { ChevronLeft, Heart, ImagePlus, PawPrint } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
@@ -133,7 +133,7 @@ export default function EditOshiPage() {
               className="h-full w-full object-cover"
             />
           ) : (
-            <Heart className="h-10 w-10 text-oshica-primary" />
+            <PawPrint className="h-10 w-10 text-oshica-primary" />
           )}
         </div>
 

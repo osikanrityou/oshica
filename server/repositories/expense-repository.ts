@@ -5,19 +5,27 @@ import {
   type SupabaseServerClient,
 } from "@/server/repositories/base";
 
+export type ExpenseWithOshi = Tables<"expenses"> & {
+  oshi: {
+    id: string;
+    name: string;
+  } | null;
+};
+
 export class ExpenseRepository {
   constructor(private readonly supabase: SupabaseServerClient) {}
 
-  async listByUser(userId: string | undefined): Promise<Tables<"expenses">[]> {
+  async listByUser(userId: string | undefined): Promise<ExpenseWithOshi[]> {
     const uid = getUserIdOrThrow(userId);
+
     const { data, error } = await this.supabase
       .from("expenses")
-      .select("*")
+      .select("*, oshi:oshis(id, name)")
       .eq("user_id", uid)
       .order("spent_at", { ascending: false });
 
     if (error) throw error;
-    return data ?? [];
+    return (data ?? []) as ExpenseWithOshi[];
   }
 
   async monthlyTotal(
@@ -45,6 +53,7 @@ export class ExpenseRepository {
     payload: Omit<TablesInsert<"expenses">, "user_id">,
   ): Promise<Tables<"expenses">> {
     const uid = getUserIdOrThrow(userId);
+
     const { data, error } = await this.supabase
       .from("expenses")
       .insert({ ...payload, user_id: uid })

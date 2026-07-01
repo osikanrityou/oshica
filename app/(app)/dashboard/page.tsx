@@ -4,14 +4,17 @@ import {
   Bell,
   CalendarDays,
   ChevronRight,
-  Heart,
   Package,
+  PawPrint,
   Wallet,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "ホーム" };
+
+const FREE_OSHI_LIMIT = 3;
+const FREE_PER_OSHI_LIMIT = 3;
 
 function getDaysLeft(dateText: string) {
   const today = new Date();
@@ -40,22 +43,7 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { data: userSettings } = await supabase
-    .from("user_settings")
-    .select("home_title, home_subtitle")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  const homeTitle =
-    userSettings?.home_title ?? "今日も推し活を\n一緒に確認しよう";
-
-  const homeSubtitle =
-    userSettings?.home_subtitle ??
-    "グッズ・イベント・支出をまとめてチェックできます";
+  if (!user) redirect("/login");
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -84,11 +72,12 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false });
 
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-
-  const monthStart = new Date(year, month, 1).toISOString().slice(0, 10);
-  const monthEnd = new Date(year, month + 1, 0).toISOString().slice(0, 10);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    .toISOString()
+    .slice(0, 10);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    .toISOString()
+    .slice(0, 10);
 
   const { data: monthlyExpenses } = await supabase
     .from("expenses")
@@ -105,14 +94,14 @@ export default async function DashboardPage() {
   const latestGoods = goods?.slice(0, 3) ?? [];
 
   return (
-    <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-32 pt-8 text-oshica-text">
+    <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
       <header className="flex items-center justify-between">
         <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl text-oshica-secondary shadow-sm">
           ≡
         </button>
 
         <p className="text-base font-black tracking-wide text-oshica-secondary">
-          OshiCA
+          Oshica
         </p>
 
         <Link
@@ -130,17 +119,21 @@ export default async function DashboardPage() {
               推し活の締切、もう忘れない。
             </p>
 
-            <h1 className="mt-2 whitespace-pre-line text-2xl font-black leading-relaxed text-oshica-text">
-              {homeTitle}
+            <h1 className="mt-2 text-2xl font-black leading-relaxed text-oshica-text">
+              今日も推し活を
+              <br />
+              一緒に確認しよう
             </h1>
 
             <p className="mt-2 text-sm leading-relaxed text-oshica-primary">
-              {homeSubtitle}
+              Freeプランは推し{FREE_OSHI_LIMIT}人まで。
+              <br />
+              各推しごとに3件ずつ管理できます。
             </p>
           </div>
 
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[1.75rem] bg-oshica-bg text-4xl">
-            🐾
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[1.75rem] bg-oshica-bg text-oshica-primary">
+            <PawPrint className="h-10 w-10" />
           </div>
         </div>
       </section>
@@ -171,10 +164,55 @@ export default async function DashboardPage() {
         </Link>
       </section>
 
+      <section className="mt-5 rounded-[2rem] bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-black text-oshica-primary">Free</p>
+            <p className="mt-1 text-sm font-black text-oshica-text">
+              推し {oshis?.length ?? 0}/{FREE_OSHI_LIMIT}人
+            </p>
+          </div>
+
+          <div className="rounded-full bg-oshica-bg px-3 py-1 text-xs font-bold text-oshica-primary">
+            各3件まで
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-2xl bg-oshica-bg px-2 py-3">
+            <p className="text-[10px] font-bold text-oshica-primary">
+              イベント
+            </p>
+            <p className="mt-1 text-sm font-black text-oshica-text">
+              {FREE_PER_OSHI_LIMIT}件
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-oshica-bg px-2 py-3">
+            <p className="text-[10px] font-bold text-oshica-primary">
+              グッズ
+            </p>
+            <p className="mt-1 text-sm font-black text-oshica-text">
+              {FREE_PER_OSHI_LIMIT}件
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-oshica-bg px-2 py-3">
+            <p className="text-[10px] font-bold text-oshica-primary">支出</p>
+            <p className="mt-1 text-sm font-black text-oshica-text">
+              {FREE_PER_OSHI_LIMIT}件
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="mt-7">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-black text-oshica-text">次の締切</h2>
-          <Link href="/calendar" className="text-xs font-bold text-oshica-primary">
+          <Link
+            href="/calendar"
+            className="text-xs font-bold text-oshica-primary"
+          >
             カレンダーで見る ›
           </Link>
         </div>
@@ -217,7 +255,10 @@ export default async function DashboardPage() {
       <section className="mt-8">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-black text-oshica-text">推し一覧</h2>
-          <Link href="/oshis/new" className="text-xs font-bold text-oshica-primary">
+          <Link
+            href="/oshis/new"
+            className="text-xs font-bold text-oshica-primary"
+          >
             追加する ›
           </Link>
         </div>
@@ -247,7 +288,7 @@ export default async function DashboardPage() {
                 <Link key={oshi.id} href={`/oshis/${oshi.id}`} className="block">
                   <div className="rounded-[2rem] bg-white p-5 shadow-sm transition-all duration-200 active:scale-[0.98]">
                     <div className="flex items-center gap-4">
-                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-oshica-bg ring-2 ring-white shadow-sm">
+                      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-oshica-bg ring-2 ring-white shadow-sm">
                         {oshi.image_url ? (
                           <img
                             src={oshi.image_url}
@@ -255,9 +296,7 @@ export default async function DashboardPage() {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <Heart className="h-7 w-7 text-oshica-primary" />
-                          </div>
+                          <PawPrint className="h-7 w-7 text-oshica-primary" />
                         )}
                       </div>
 
@@ -272,9 +311,9 @@ export default async function DashboardPage() {
                           </p>
                         )}
 
-                        <div className="mt-2 flex flex-wrap gap-3 text-xs font-bold text-oshica-primary">
-                          <span>予定 {oshiEvents}件</span>
-                          <span>グッズ {oshiGoods}件</span>
+                        <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-oshica-primary">
+                          <span>予定 {oshiEvents}/3</span>
+                          <span>グッズ {oshiGoods}/3</span>
                           <span>¥{oshiExpense.toLocaleString()}</span>
                         </div>
                       </div>

@@ -1,11 +1,15 @@
-import { CalendarDays, Wallet } from "lucide-react";
+
+import { Wallet } from "lucide-react";
 
 import { MobilePage } from "@/components/layout/MobilePage";
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { ExpenseList } from "@/features/expense/components/ExpenseList";
 import { createClient } from "@/lib/supabase/server";
-import { ExpenseRepository } from "@/server/repositories/expense-repository";
+import {
+  ExpenseRepository,
+  type ExpenseWithOshi,
+} from "@/server/repositories/expense-repository";
 
 export const metadata = { title: "支出" };
 
@@ -16,7 +20,7 @@ export default async function ExpensesPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let items: Awaited<ReturnType<ExpenseRepository["listByUser"]>> = [];
+  let items: ExpenseWithOshi[] = [];
 
   if (user) {
     try {
@@ -30,10 +34,9 @@ export default async function ExpensesPage() {
   const total = items.reduce((sum, item) => sum + item.amount, 0);
 
   const now = new Date();
-  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}`;
+  const thisMonth = `${now.getFullYear()}-${String(
+    now.getMonth() + 1,
+  ).padStart(2, "0")}`;
 
   const monthTotal = items
     .filter((item) => item.spent_at?.startsWith(thisMonth))
@@ -44,7 +47,7 @@ export default async function ExpensesPage() {
       <OshicaPageHeader
         label="Expenses"
         title="支出"
-        description="推し活に使った金額をまとめて確認できます"
+        description="どの推しに使った金額か、まとめて確認できます"
         icon={<Wallet className="h-5 w-5" />}
         actionHref="/expenses/new"
         actionLabel="追加する ›"
