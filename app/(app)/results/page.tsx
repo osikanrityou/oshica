@@ -1,6 +1,7 @@
 import { Trophy } from "lucide-react";
 
 import { MobilePage } from "@/components/layout/MobilePage";
+import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { LotteryResultList } from "@/features/lottery-result/components/LotteryResultList";
 import { createClient } from "@/lib/supabase/server";
@@ -30,6 +31,18 @@ export default async function ResultsPage() {
 
   return (
     <MobilePage className="bg-oshica-bg pb-32">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <SidebarMenuButton />
+
+          <p className="text-base font-black tracking-wide text-oshica-secondary">
+            Oshica
+          </p>
+        </div>
+
+        <div className="h-10 w-10" />
+      </div>
+
       <OshicaPageHeader
         label="Lottery"
         title="当落"

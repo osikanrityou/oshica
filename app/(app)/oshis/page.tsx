@@ -6,6 +6,7 @@ import {
   PawPrint,
   Plus,
 } from "lucide-react";
+import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -62,6 +63,18 @@ export default async function OshiPage() {
 
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <SidebarMenuButton />
+
+          <p className="text-base font-black tracking-wide text-oshica-secondary">
+            Oshica
+          </p>
+        </div>
+
+        <div className="h-10 w-10" />
+      </div>
+
       <OshicaPageHeader
         label="Oshi"
         title="推し一覧"
@@ -139,8 +152,8 @@ export default async function OshiPage() {
                         </span>
 
                         <span className="flex items-center gap-1">
-                          <Droplet className="h-3.5 w-3.5" />
-                          ¥{expenseTotal.toLocaleString()}
+                          <Droplet className="h-3.5 w-3.5" />¥
+                          {expenseTotal.toLocaleString()}
                         </span>
                       </div>
                     </div>

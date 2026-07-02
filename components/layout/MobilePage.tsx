@@ -6,11 +6,14 @@ type MobilePageProps = {
 };
 
 /** スマホ向け最大幅・余白を揃えるラッパー */
-export function MobilePage({ children, className }: MobilePageProps) {
+export function MobilePage({
+  children,
+  className,
+}: MobilePageProps) {
   return (
     <div
       className={cn(
-        "mx-auto w-full max-w-lg flex-1 px-4 pb-24 pt-4",
+        "mx-auto w-full max-w-md flex-1 px-5 pb-36 pt-8",
         className,
       )}
     >

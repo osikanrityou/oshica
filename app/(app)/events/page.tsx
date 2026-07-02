@@ -1,13 +1,18 @@
 import Link from "next/link";
-import { CalendarDays, ChevronRight, Clock, Plus } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronRight,
+  Clock,
+} from "lucide-react";
 
+import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
 import { OshicaCard } from "@/components/oshica/OshicaCard";
+import { OshicaEmptyState } from "@/components/oshica/OshicaEmptyState";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { OshicaSectionHeader } from "@/components/oshica/OshicaSectionHeader";
 import { DeleteButton } from "@/components/shared/DeleteButton";
 import { createClient } from "@/lib/supabase/server";
 import { deleteEvent } from "./actions";
-import { OshicaEmptyState } from "@/components/oshica/OshicaEmptyState";
 
 export const metadata = {
   title: "イベント一覧",
@@ -40,9 +45,7 @@ export default async function EventsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   const { data: events } = await supabase
     .from("events")
@@ -58,6 +61,18 @@ export default async function EventsPage() {
 
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <SidebarMenuButton />
+
+          <p className="text-base font-black tracking-wide text-oshica-secondary">
+            Oshica
+          </p>
+        </div>
+
+        <div className="h-10 w-10" />
+      </div>
+
       <OshicaPageHeader
         label="Event"
         title="イベント一覧"
@@ -96,7 +111,10 @@ export default async function EventsPage() {
                 className="border-l-2 border-l-oshica-border transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:scale-[0.98]"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <Link href={`/events/${item.id}/edit`} className="min-w-0 flex-1">
+                  <Link
+                    href={`/events/${item.id}/edit`}
+                    className="min-w-0 flex-1"
+                  >
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 rounded-full bg-oshica-bg px-2 py-0.5 text-[10px] font-bold text-oshica-secondary">
                         <CalendarDays className="h-3 w-3" />
@@ -145,26 +163,26 @@ export default async function EventsPage() {
                   </Link>
                 </div>
 
-               <div className="mt-3 flex items-center justify-between">
-  <span className="text-xs font-bold text-oshica-primary">
-    詳細を確認できます
-  </span>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-xs font-bold text-oshica-primary">
+                    詳細を確認できます
+                  </span>
 
-  <form action={deleteEvent}>
-    <input type="hidden" name="eventId" value={item.id} />
-    <DeleteButton message={`${item.title}を削除しますか？`} />
-  </form>
-</div>
+                  <form action={deleteEvent}>
+                    <input type="hidden" name="eventId" value={item.id} />
+                    <DeleteButton message={`${item.title}を削除しますか？`} />
+                  </form>
+                </div>
               </OshicaCard>
             ))
           ) : (
-        <OshicaEmptyState
-  icon={<CalendarDays className="h-6 w-6" />}
-  title="まだイベントがありません"
-  description="イベント予定を追加しましょう"
-  href="/events/new"
-  actionLabel="イベントを登録"
-/>
+            <OshicaEmptyState
+              icon={<CalendarDays className="h-6 w-6" />}
+              title="まだイベントがありません"
+              description="イベント予定を追加しましょう"
+              href="/events/new"
+              actionLabel="イベントを登録"
+            />
           )}
         </div>
       </section>

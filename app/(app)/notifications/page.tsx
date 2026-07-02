@@ -1,14 +1,36 @@
-import { Bell, CalendarDays } from "lucide-react";
+import { Bell } from "lucide-react";
 
+import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
 import { OshicaCard } from "@/components/oshica/OshicaCard";
+import { OshicaEmptyState } from "@/components/oshica/OshicaEmptyState";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { createClient } from "@/lib/supabase/server";
 import { syncReminders } from "./actions";
-import { OshicaEmptyState } from "@/components/oshica/OshicaEmptyState";
 
 export const metadata = {
   title: "通知",
 };
+
+function getDaysLeft(dateText: string) {
+  const today = new Date();
+  const target = new Date(dateText);
+
+  today.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+
+  return Math.ceil(
+    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+  );
+}
+
+function reminderLabel(dateText: string) {
+  const days = getDaysLeft(dateText);
+
+  if (days === 0) return "今日";
+  if (days === 1) return "明日";
+  if (days > 1) return `あと${days}日`;
+  return `${Math.abs(days)}日前`;
+}
 
 export default async function NotificationsPage() {
   await syncReminders();
@@ -19,9 +41,7 @@ export default async function NotificationsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   const { data: reminders } = await supabase
     .from("reminders")
@@ -34,10 +54,22 @@ export default async function NotificationsPage() {
     reminders?.filter((item: any) => !item.is_read).length ?? 0;
 
   const todayCount =
-    reminders?.filter((item: any) => item.remind_type === "today").length ?? 0;
+    reminders?.filter((item: any) => getDaysLeft(item.date) === 0).length ?? 0;
 
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <SidebarMenuButton />
+
+          <p className="text-base font-black tracking-wide text-oshica-secondary">
+            Oshica
+          </p>
+        </div>
+
+        <div className="h-10 w-10" />
+      </div>
+
       <OshicaPageHeader
         label="Notification"
         title="通知"
@@ -54,9 +86,9 @@ export default async function NotificationsPage() {
         </OshicaCard>
 
         <OshicaCard>
-          <p className="text-xs font-bold text-oshica-primary">未読</p>
+          <p className="text-xs font-bold text-oshica-primary">今日</p>
           <p className="mt-2 text-2xl font-black text-oshica-text">
-            {unreadCount}件
+            {todayCount}件
           </p>
         </OshicaCard>
       </section>
@@ -67,7 +99,7 @@ export default async function NotificationsPage() {
             リマインダー
           </h2>
           <p className="text-xs font-bold text-oshica-primary">
-            今日 {todayCount}件
+            未読 {unreadCount}件
           </p>
         </div>
 
@@ -76,15 +108,19 @@ export default async function NotificationsPage() {
             reminders.map((item: any) => (
               <OshicaCard
                 key={item.id}
-                className="border-l-2 border-l-oshica-border"
+                className="border-l-2 border-l-oshica-border transition-all duration-200 active:scale-[0.98]"
               >
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
-                    <CalendarDays className="h-5 w-5" />
+                    <Bell className="h-5 w-5" />
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-oshica-bg px-2 py-0.5 text-[10px] font-bold text-oshica-secondary">
+                        {reminderLabel(item.date)}
+                      </span>
+
                       <p className="text-xs font-bold text-oshica-primary">
                         {item.label}
                       </p>
@@ -96,7 +132,7 @@ export default async function NotificationsPage() {
                       )}
                     </div>
 
-                    <p className="mt-1 font-black text-oshica-text">
+                    <p className="mt-2 font-black text-oshica-text">
                       {item.title}
                     </p>
 
@@ -112,11 +148,11 @@ export default async function NotificationsPage() {
               </OshicaCard>
             ))
           ) : (
-           <OshicaEmptyState
-  icon={<Bell className="h-6 w-6" />}
-  title="まだ通知はありません"
-  description="締切が近づくとここに表示されます"
-/>
+            <OshicaEmptyState
+              icon={<Bell className="h-6 w-6" />}
+              title="まだ通知はありません"
+              description="締切が近づくとここに表示されます"
+            />
           )}
         </div>
       </section>

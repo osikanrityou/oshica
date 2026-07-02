@@ -1,13 +1,12 @@
 ﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  Package,
   ChevronRight,
+  Package,
   ShoppingBag,
-  Clock,
-  Plus,
 } from "lucide-react";
 
+import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
 import { createClient } from "@/lib/supabase/server";
 import { deleteGoods } from "./actions";
 import { DeleteButton } from "@/components/shared/DeleteButton";
@@ -55,33 +54,42 @@ export default async function GoodsPage() {
 
   return (
     <main className="mx-auto max-w-md bg-[#E9F0FF] px-5 pb-32 pt-8 text-[#001117]">
-     <OshicaPageHeader
-  label="Goods"
-  title="グッズ一覧"
-  description="予約・発売日・締切をまとめて管理できます"
-  icon={<ShoppingBag className="h-5 w-5" />}
-/>
-<section className="mt-6 grid grid-cols-2 gap-3">
-  <OshicaCard>
-    <p className="text-xs font-bold text-oshica-primary">
-      登録グッズ
-    </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <SidebarMenuButton />
 
-    <p className="mt-2 text-2xl font-black text-oshica-text">
-      {goods?.length ?? 0}件
-    </p>
-  </OshicaCard>
+          <p className="text-base font-black tracking-wide text-oshica-secondary">
+            Oshica
+          </p>
+        </div>
 
-  <OshicaCard>
-    <p className="text-xs font-bold text-oshica-primary">
-      締切あり
-    </p>
+        <div className="h-10 w-10" />
+      </div>
 
-    <p className="mt-2 text-2xl font-black text-oshica-text">
-      {goods?.filter((g:any)=>g.deadline).length ?? 0}件
-    </p>
-  </OshicaCard>
-</section>
+      <OshicaPageHeader
+        label="Goods"
+        title="グッズ一覧"
+        description="予約・発売日・締切をまとめて管理できます"
+        icon={<ShoppingBag className="h-5 w-5" />}
+      />
+
+      <section className="mt-6 grid grid-cols-2 gap-3">
+        <OshicaCard>
+          <p className="text-xs font-bold text-oshica-primary">登録グッズ</p>
+
+          <p className="mt-2 text-2xl font-black text-oshica-text">
+            {goods?.length ?? 0}件
+          </p>
+        </OshicaCard>
+
+        <OshicaCard>
+          <p className="text-xs font-bold text-oshica-primary">締切あり</p>
+
+          <p className="mt-2 text-2xl font-black text-oshica-text">
+            {goods?.filter((g: any) => g.deadline).length ?? 0}件
+          </p>
+        </OshicaCard>
+      </section>
 
       <section className="mt-6">
         <OshicaSectionHeader
@@ -95,13 +103,8 @@ export default async function GoodsPage() {
             goods.map((item: any) => (
               <OshicaCard key={item.id}>
                 <div className="flex items-start justify-between gap-3">
-                  <Link
-                    href={`/goods/${item.id}/edit`}
-                    className="flex-1"
-                  >
-                    <p className="font-black text-[#001117]">
-                      {item.name}
-                    </p>
+                  <Link href={`/goods/${item.id}/edit`} className="flex-1">
+                    <p className="font-black text-[#001117]">{item.name}</p>
 
                     <p className="mt-1 text-sm font-black text-oshica-secondary">
                       {item.price
@@ -121,9 +124,9 @@ export default async function GoodsPage() {
                       </p>
                     )}
 
-                   <span className="mt-2 inline-flex rounded-full bg-oshica-bg px-2 py-1 text-[10px] font-bold text-oshica-secondary">
-  {item.status ?? "未予約"}
-</span>
+                    <span className="mt-2 inline-flex rounded-full bg-oshica-bg px-2 py-1 text-[10px] font-bold text-oshica-secondary">
+                      {item.status ?? "未予約"}
+                    </span>
 
                     {item.memo && (
                       <p className="mt-2 text-sm text-[#2C3855]">
@@ -155,27 +158,21 @@ export default async function GoodsPage() {
                   </span>
 
                   <form action={deleteGoods}>
-                    <input
-                      type="hidden"
-                      name="goodsId"
-                      value={item.id}
-                    />
+                    <input type="hidden" name="goodsId" value={item.id} />
 
-                    <DeleteButton
-                      message={`${item.name}を削除しますか？`}
-                    />
+                    <DeleteButton message={`${item.name}を削除しますか？`} />
                   </form>
                 </div>
               </OshicaCard>
             ))
           ) : (
-         <OshicaEmptyState
-  icon={<Package className="h-6 w-6" />}
-  title="まだグッズがありません"
-  description="予約したグッズを登録しましょう"
-  href="/goods/new"
-  actionLabel="グッズを登録"
-/>
+            <OshicaEmptyState
+              icon={<Package className="h-6 w-6" />}
+              title="まだグッズがありません"
+              description="予約したグッズを登録しましょう"
+              href="/goods/new"
+              actionLabel="グッズを登録"
+            />
           )}
         </div>
       </section>

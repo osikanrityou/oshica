@@ -1,7 +1,6 @@
-
 import { Wallet } from "lucide-react";
 
-import { MobilePage } from "@/components/layout/MobilePage";
+import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { ExpenseList } from "@/features/expense/components/ExpenseList";
@@ -43,7 +42,19 @@ export default async function ExpensesPage() {
     .reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <MobilePage className="bg-oshica-bg pb-36">
+    <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <SidebarMenuButton />
+
+          <p className="text-base font-black tracking-wide text-oshica-secondary">
+            Oshica
+          </p>
+        </div>
+
+        <div className="h-10 w-10" />
+      </div>
+
       <OshicaPageHeader
         label="Expenses"
         title="支出"
@@ -79,6 +90,6 @@ export default async function ExpensesPage() {
 
         <ExpenseList items={items} />
       </section>
-    </MobilePage>
+    </main>
   );
 }

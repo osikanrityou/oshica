@@ -4,12 +4,19 @@ import {
   Bell,
   CalendarDays,
   ChevronRight,
+  Home,
   Package,
   PawPrint,
+  Settings,
+  Trophy,
+  Users,
   Wallet,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
+
+
 
 export const metadata = { title: "ホーム" };
 
@@ -95,23 +102,22 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
-      <header className="flex items-center justify-between">
-        <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl text-oshica-secondary shadow-sm">
-          ≡
-        </button>
+    <div className="mb-6 flex items-center justify-between">
+  <div className="flex items-center gap-3">
+    <SidebarMenuButton />
 
-        <p className="text-base font-black tracking-wide text-oshica-secondary">
-          Oshica
-        </p>
+    <p className="text-base font-black tracking-wide text-oshica-secondary">
+      Oshica
+    </p>
+  </div>
 
-        <Link
-          href="/notifications"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-primary shadow-sm"
-        >
-          <Bell className="h-5 w-5" />
-        </Link>
-      </header>
-
+  <Link
+    href="/notifications"
+    className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-primary shadow-sm"
+  >
+    <Bell className="h-5 w-5" />
+  </Link>
+</div>
       <section className="mt-7 overflow-hidden rounded-[2rem] bg-white p-5 shadow-sm">
         <div className="flex items-start justify-between gap-4">
           <div>
