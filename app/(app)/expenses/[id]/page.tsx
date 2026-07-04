@@ -36,6 +36,12 @@ export default async function EditExpensePage({ params }: Props) {
     redirect("/expenses");
   }
 
+  const { data: oshis } = await supabase
+    .from("oshis")
+    .select("id, name")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
       <div className="mb-6 flex items-center justify-between">
@@ -69,6 +75,23 @@ export default async function EditExpensePage({ params }: Props) {
         <input type="hidden" name="expenseId" value={expense.id} />
 
         <OshicaCard className="space-y-4">
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">推し</span>
+
+            <select
+              name="oshiId"
+              defaultValue={expense.oshi_id ?? ""}
+              className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            >
+              <option value="">推しを選択</option>
+              {oshis?.map((oshi: any) => (
+                <option key={oshi.id} value={oshi.id}>
+                  {oshi.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <label className="block">
             <span className="text-sm font-bold text-oshica-text">
               タイトル
@@ -120,7 +143,7 @@ export default async function EditExpensePage({ params }: Props) {
 
             <textarea
               name="memo"
-              defaultValue={expense.memo ?? ""}
+              defaultValue={expense.notes ?? expense.memo ?? ""}
               rows={4}
               className="mt-2 w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />

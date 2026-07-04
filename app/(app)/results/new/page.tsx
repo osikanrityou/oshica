@@ -1,3 +1,5 @@
+// app/(app)/results/new/page.tsx
+
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Trophy } from "lucide-react";
@@ -16,6 +18,12 @@ export default async function NewResultPage() {
 
   if (!user) redirect("/login");
 
+  const { data: oshis } = await supabase
+    .from("oshis")
+    .select("id, name")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
       <OshicaPageHeader
@@ -27,6 +35,21 @@ export default async function NewResultPage() {
 
       <form action={createLotteryResult} className="mt-5 space-y-5">
         <OshicaCard className="space-y-4">
+          <label className="block">
+            <span className="text-sm font-bold text-oshica-text">推し</span>
+            <select
+              name="oshiId"
+              className="mt-2 block w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            >
+              <option value="">推しを選択</option>
+              {oshis?.map((oshi: any) => (
+                <option key={oshi.id} value={oshi.id}>
+                  {oshi.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <label className="block">
             <span className="text-sm font-bold text-oshica-text">結果</span>
             <select

@@ -1,3 +1,5 @@
+// app/(app)/results/actions.ts
+
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -6,6 +8,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export async function createLotteryResult(formData: FormData) {
+  const oshiId = formData.get("oshiId");
   const result = formData.get("result");
   const announcedAt = formData.get("announcedAt");
   const notes = formData.get("notes");
@@ -21,6 +24,8 @@ export async function createLotteryResult(formData: FormData) {
   const { error } = await supabase.from("lottery_results").insert({
     user_id: user.id,
     source_type: "当落記録",
+    source_id:
+      typeof oshiId === "string" && oshiId.length > 0 ? oshiId : null,
     result: typeof result === "string" ? result : "pending",
     announced_at:
       typeof announcedAt === "string" && announcedAt.length > 0

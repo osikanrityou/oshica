@@ -2,6 +2,8 @@ import Link from "next/link";
 import { CircleCheck, CircleDashed, CircleX, Trophy } from "lucide-react";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
+import { DeleteButton } from "@/components/shared/DeleteButton";
+import { deleteLotteryResult } from "@/app/(app)/results/actions";
 import type { Tables } from "@/lib/supabase/database.types";
 
 type LotteryResultListProps = {
@@ -35,8 +37,8 @@ export function LotteryResultList({ items }: LotteryResultListProps) {
 
         return (
           <li key={item.id}>
-            <Link href={`/results/${item.id}`} className="block">
-              <OshicaCard className="transition-all duration-200 active:scale-[0.98]">
+            <OshicaCard className="transition-all duration-200 active:scale-[0.98]">
+              <Link href={`/results/${item.id}`} className="block">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-oshica-bg">
@@ -67,8 +69,8 @@ export function LotteryResultList({ items }: LotteryResultListProps) {
                       isWin
                         ? "bg-green-100 text-green-700"
                         : isLose
-                        ? "bg-red-100 text-red-700"
-                        : "bg-oshica-bg text-oshica-secondary"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-oshica-bg text-oshica-secondary"
                     }`}
                   >
                     {isWin ? (
@@ -89,8 +91,19 @@ export function LotteryResultList({ items }: LotteryResultListProps) {
                     )}
                   </span>
                 </div>
-              </OshicaCard>
-            </Link>
+              </Link>
+
+              <div className="mt-3 flex items-center justify-between">
+                <span className="text-xs font-bold text-oshica-primary">
+                  詳細を確認できます
+                </span>
+
+                <form action={deleteLotteryResult}>
+                  <input type="hidden" name="resultId" value={item.id} />
+                  <DeleteButton message="この当落記録を削除しますか？" />
+                </form>
+              </div>
+            </OshicaCard>
           </li>
         );
       })}

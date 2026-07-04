@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, Heart, ImagePlus, PawPrint } from "lucide-react";
+import { ChevronLeft, ImagePlus, PawPrint } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
@@ -14,6 +14,7 @@ export default function EditOshiPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
@@ -73,12 +74,12 @@ export default function EditOshiPage() {
 
     const { error } = await supabase
       .from("oshis")
-     .update({
-  name,
-  category,
-  memo,
-  image_url: nextImageUrl,
-})
+      .update({
+        name,
+        category,
+        memo,
+        image_url: nextImageUrl,
+      })
       .eq("id", params.id);
 
     if (error) {
@@ -88,6 +89,28 @@ export default function EditOshiPage() {
     }
 
     router.push(`/oshis/${params.id}`);
+    router.refresh();
+  };
+
+  const handleDelete = async () => {
+    const ok = window.confirm("この推しを削除しますか？");
+
+    if (!ok) return;
+
+    setDeleting(true);
+
+    const { error } = await supabase
+      .from("oshis")
+      .delete()
+      .eq("id", params.id);
+
+    if (error) {
+      alert(error.message);
+      setDeleting(false);
+      return;
+    }
+
+    router.push("/oshis");
     router.refresh();
   };
 
@@ -199,12 +222,22 @@ export default function EditOshiPage() {
 
         <button
           onClick={handleUpdate}
-          disabled={saving}
+          disabled={saving || deleting}
           className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-60"
         >
           {saving ? "保存中..." : "保存する"}
         </button>
       </div>
+
+      <section className="mt-8">
+        <button
+          onClick={handleDelete}
+          disabled={saving || deleting}
+          className="w-full rounded-[2rem] border border-red-200 bg-white px-5 py-4 text-sm font-black text-red-500 shadow-sm transition active:scale-[0.98] disabled:opacity-60"
+        >
+          {deleting ? "削除中..." : "この推しを削除する"}
+        </button>
+      </section>
     </main>
   );
 }

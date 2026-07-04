@@ -50,7 +50,8 @@ export async function createExpense(formData: FormData) {
       typeof spentAt === "string" && spentAt.length > 0
         ? spentAt
         : new Date().toISOString().slice(0, 10),
-    notes: typeof memo === "string" && memo.trim().length > 0 ? memo.trim() : null,
+    notes:
+      typeof memo === "string" && memo.trim().length > 0 ? memo.trim() : null,
     category: "other",
     oshi_id: oshiId,
     user_id: user.id,
@@ -60,6 +61,9 @@ export async function createExpense(formData: FormData) {
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
+  revalidatePath("/oshis");
+  revalidatePath(`/oshis/${oshiId}`);
+
   redirect("/expenses");
 }
 
@@ -74,6 +78,13 @@ export async function deleteExpense(formData: FormData) {
 
   if (!user) redirect("/login");
 
+  const { data: expense } = await supabase
+    .from("expenses")
+    .select("oshi_id")
+    .eq("id", expenseId)
+    .eq("user_id", user.id)
+    .single();
+
   await supabase
     .from("expenses")
     .delete()
@@ -82,6 +93,12 @@ export async function deleteExpense(formData: FormData) {
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
+  revalidatePath("/oshis");
+
+  if (expense?.oshi_id) {
+    revalidatePath(`/oshis/${expense.oshi_id}`);
+  }
+
   redirect("/expenses");
 }
 
@@ -117,5 +134,11 @@ export async function updateExpense(formData: FormData) {
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
+  revalidatePath("/oshis");
+
+  if (typeof oshiId === "string" && oshiId.length > 0) {
+    revalidatePath(`/oshis/${oshiId}`);
+  }
+
   redirect("/expenses");
 }
