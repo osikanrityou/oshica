@@ -1,5 +1,3 @@
-// app/(app)/results/actions.ts
-
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -7,11 +5,17 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 
+const FREE_PER_OSHI_LIMIT = 3;
+
 export async function createLotteryResult(formData: FormData) {
   const oshiId = formData.get("oshiId");
   const result = formData.get("result");
   const announcedAt = formData.get("announcedAt");
   const notes = formData.get("notes");
+
+  if (typeof oshiId !== "string" || oshiId.length === 0) {
+    redirect("/results/new");
+  }
 
   const supabase = (await createClient()) as any;
 
@@ -21,11 +25,22 @@ export async function createLotteryResult(formData: FormData) {
 
   if (!user) redirect("/login");
 
+  const { count, error: countError } = await supabase
+    .from("lottery_results")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("source_id", oshiId);
+
+  if (countError) throw new Error(countError.message);
+
+  if ((count ?? 0) >= FREE_PER_OSHI_LIMIT) {
+    redirect("/results/new");
+  }
+
   const { error } = await supabase.from("lottery_results").insert({
     user_id: user.id,
     source_type: "当落記録",
-    source_id:
-      typeof oshiId === "string" && oshiId.length > 0 ? oshiId : null,
+    source_id: oshiId,
     result: typeof result === "string" ? result : "pending",
     announced_at:
       typeof announcedAt === "string" && announcedAt.length > 0
@@ -40,12 +55,15 @@ export async function createLotteryResult(formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/results");
+  revalidatePath("/oshis");
   revalidatePath("/dashboard");
+
   redirect("/results");
 }
 
 export async function updateLotteryResult(formData: FormData) {
   const resultId = formData.get("resultId");
+  const oshiId = formData.get("oshiId");
   const result = formData.get("result");
   const announcedAt = formData.get("announcedAt");
   const notes = formData.get("notes");
@@ -60,19 +78,51 @@ export async function updateLotteryResult(formData: FormData) {
 
   if (!user) redirect("/login");
 
+  const nextOshiId =
+    typeof oshiId === "string" && oshiId.length > 0 ? oshiId : null;
+
+  if (nextOshiId) {
+    const { data: currentResult } = await supabase
+      .from("lottery_results")
+      .select("source_id")
+      .eq("id", resultId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (currentResult?.source_id !== nextOshiId) {
+      const { count, error: countError } = await supabase
+        .from("lottery_results")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("source_id", nextOshiId);
+
+      if (countError) throw new Error(countError.message);
+
+      if ((count ?? 0) >= FREE_PER_OSHI_LIMIT) {
+        redirect(`/results/${resultId}`);
+      }
+    }
+  }
+
+  const updateData: any = {
+    result: typeof result === "string" ? result : "pending",
+    announced_at:
+      typeof announcedAt === "string" && announcedAt.length > 0
+        ? announcedAt
+        : null,
+    notes:
+      typeof notes === "string" && notes.trim().length > 0
+        ? notes.trim()
+        : null,
+  };
+
+  if (nextOshiId) {
+    updateData.source_id = nextOshiId;
+  }
+
   const { error } = await supabase
     .from("lottery_results")
-    .update({
-      result: typeof result === "string" ? result : "pending",
-      announced_at:
-        typeof announcedAt === "string" && announcedAt.length > 0
-          ? announcedAt
-          : null,
-      notes:
-        typeof notes === "string" && notes.trim().length > 0
-          ? notes.trim()
-          : null,
-    })
+    .update(updateData)
     .eq("id", resultId)
     .eq("user_id", user.id);
 
@@ -80,6 +130,9 @@ export async function updateLotteryResult(formData: FormData) {
 
   revalidatePath("/results");
   revalidatePath(`/results/${resultId}`);
+  revalidatePath("/oshis");
+  revalidatePath("/dashboard");
+
   redirect("/results");
 }
 
@@ -105,6 +158,8 @@ export async function deleteLotteryResult(formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/results");
+  revalidatePath("/oshis");
   revalidatePath("/dashboard");
+
   redirect("/results");
 }

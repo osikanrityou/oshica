@@ -6,11 +6,14 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
+import { deleteOshiCascade } from "./actions";
 
 export default function EditOshiPage() {
   const router = useRouter();
   const params = useParams();
   const supabase = createClient() as any;
+
+  const oshiId = String(params.id);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,7 +34,7 @@ export default function EditOshiPage() {
     const { data } = await supabase
       .from("oshis")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", oshiId)
       .single();
 
     if (data) {
@@ -51,13 +54,11 @@ export default function EditOshiPage() {
 
     if (imageFile) {
       const fileExt = imageFile.name.split(".").pop();
-      const filePath = `${params.id}/${Date.now()}.${fileExt}`;
+      const filePath = `${oshiId}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("oshi-images")
-        .upload(filePath, imageFile, {
-          upsert: true,
-        });
+        .upload(filePath, imageFile, { upsert: true });
 
       if (uploadError) {
         alert(uploadError.message);
@@ -80,7 +81,7 @@ export default function EditOshiPage() {
         memo,
         image_url: nextImageUrl,
       })
-      .eq("id", params.id);
+      .eq("id", oshiId);
 
     if (error) {
       alert(error.message);
@@ -88,30 +89,31 @@ export default function EditOshiPage() {
       return;
     }
 
-    router.push(`/oshis/${params.id}`);
+    router.push(`/oshis/${oshiId}`);
     router.refresh();
   };
 
   const handleDelete = async () => {
-    const ok = window.confirm("この推しを削除しますか？");
+    const ok = window.confirm(
+      "この推しを削除すると、この推しに登録されているグッズ・イベント・支出・当落などのデータもすべて削除されます。\n\n本当に削除しますか？",
+    );
 
     if (!ok) return;
 
     setDeleting(true);
 
-    const { error } = await supabase
-      .from("oshis")
-      .delete()
-      .eq("id", params.id);
-
-    if (error) {
-      alert(error.message);
+    try {
+      await deleteOshiCascade(oshiId);
+      router.replace("/oshis");
+      router.refresh();
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "推しの削除に失敗しました。",
+      );
       setDeleting(false);
-      return;
     }
-
-    router.push("/oshis");
-    router.refresh();
   };
 
   if (loading) {
@@ -128,7 +130,7 @@ export default function EditOshiPage() {
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
       <header className="flex items-center justify-between">
         <Link
-          href={`/oshis/${params.id}`}
+          href={`/oshis/${oshiId}`}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-secondary shadow-sm"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -169,9 +171,7 @@ export default function EditOshiPage() {
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) {
-                setImageFile(file);
-              }
+              if (file) setImageFile(file);
             }}
           />
         </label>
@@ -214,7 +214,7 @@ export default function EditOshiPage() {
 
       <div className="mt-5 flex items-center justify-between gap-3">
         <Link
-          href={`/oshis/${params.id}`}
+          href={`/oshis/${oshiId}`}
           className="rounded-full px-4 py-2 text-sm font-bold text-oshica-primary"
         >
           キャンセル

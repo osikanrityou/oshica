@@ -10,7 +10,7 @@ function getDaysLeft(dateText: string) {
   target.setHours(0, 0, 0, 0);
 
   return Math.ceil(
-    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
   );
 }
 
@@ -46,7 +46,20 @@ export async function syncReminders() {
     .gte("date", today)
     .order("date", { ascending: true });
 
-  if (!schedules) return;
+  /**
+   * 削除済みのグッズ・イベントの通知が残らないように、
+   * 通知画面を開くたびに一度ユーザーの通知を作り直す。
+   */
+  const { error: deleteError } = await supabase
+    .from("reminders")
+    .delete()
+    .eq("user_id", user.id);
+
+  if (deleteError) {
+    throw new Error(deleteError.message);
+  }
+
+  if (!schedules || schedules.length === 0) return;
 
   const targets = schedules
     .map((item: any) => {
@@ -63,23 +76,18 @@ export async function syncReminders() {
         date: item.date,
         remind_type: remindType,
         message: getReminderMessage(item.label, item.title, days),
+        is_read: false,
       };
     })
     .filter(Boolean);
 
   if (targets.length === 0) return;
 
-  for (const reminder of targets) {
-    const { data: exists } = await supabase
-      .from("reminders")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("schedule_id", reminder.schedule_id)
-      .eq("remind_type", reminder.remind_type)
-      .maybeSingle();
+  const { error: insertError } = await supabase
+    .from("reminders")
+    .insert(targets);
 
-    if (!exists) {
-      await supabase.from("reminders").insert(reminder);
-    }
+  if (insertError) {
+    throw new Error(insertError.message);
   }
 }
