@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { createClient } from "@/lib/supabase/server";
 
 function getDaysLeft(dateText: string) {
@@ -46,48 +48,93 @@ export async function syncReminders() {
     .gte("date", today)
     .order("date", { ascending: true });
 
-  /**
-   * 削除済みのグッズ・イベントの通知が残らないように、
-   * 通知画面を開くたびに一度ユーザーの通知を作り直す。
-   */
-  const { error: deleteError } = await supabase
+  const targets =
+    schedules
+      ?.map((item: any) => {
+        const days = getDaysLeft(item.date);
+        const remindType = getReminderType(days);
+
+        if (!remindType) return null;
+
+        return {
+          user_id: user.id,
+          schedule_id: item.id,
+          title: item.title,
+          label: item.label,
+          date: item.date,
+          remind_type: remindType,
+          message: getReminderMessage(item.label, item.title, days),
+        };
+      })
+      .filter(Boolean) ?? [];
+
+  const validKeys = targets.map(
+    (item: any) => `${item.schedule_id}-${item.remind_type}`,
+  );
+
+  const { data: currentReminders } = await supabase
     .from("reminders")
-    .delete()
+    .select("id, schedule_id, remind_type")
     .eq("user_id", user.id);
 
-  if (deleteError) {
-    throw new Error(deleteError.message);
+  const staleReminders =
+    currentReminders?.filter((item: any) => {
+      const key = `${item.schedule_id}-${item.remind_type}`;
+      return !validKeys.includes(key);
+    }) ?? [];
+
+  if (staleReminders.length > 0) {
+    await supabase
+      .from("reminders")
+      .delete()
+      .in(
+        "id",
+        staleReminders.map((item: any) => item.id),
+      );
   }
 
-  if (!schedules || schedules.length === 0) return;
+  for (const reminder of targets as any[]) {
+    const { data: exists } = await supabase
+      .from("reminders")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("schedule_id", reminder.schedule_id)
+      .eq("remind_type", reminder.remind_type)
+      .maybeSingle();
 
-  const targets = schedules
-    .map((item: any) => {
-      const days = getDaysLeft(item.date);
-      const remindType = getReminderType(days);
-
-      if (!remindType) return null;
-
-      return {
-        user_id: user.id,
-        schedule_id: item.id,
-        title: item.title,
-        label: item.label,
-        date: item.date,
-        remind_type: remindType,
-        message: getReminderMessage(item.label, item.title, days),
+    if (exists) {
+      await supabase
+        .from("reminders")
+        .update({
+          title: reminder.title,
+          label: reminder.label,
+          date: reminder.date,
+          message: reminder.message,
+        })
+        .eq("id", exists.id)
+        .eq("user_id", user.id);
+    } else {
+      await supabase.from("reminders").insert({
+        ...reminder,
         is_read: false,
-      };
-    })
-    .filter(Boolean);
-
-  if (targets.length === 0) return;
-
-  const { error: insertError } = await supabase
-    .from("reminders")
-    .insert(targets);
-
-  if (insertError) {
-    throw new Error(insertError.message);
+      });
+    }
   }
+}
+
+export async function markAllRemindersRead() {
+  const supabase = (await createClient()) as any;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  await supabase
+    .from("reminders")
+    .update({ is_read: true })
+    .eq("user_id", user.id);
+
+  revalidatePath("/notifications");
 }

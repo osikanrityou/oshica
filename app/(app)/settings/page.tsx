@@ -3,6 +3,8 @@ import {
   Bell,
   ChevronRight,
   Crown,
+  FileText,
+  Info,
   Mail,
   Shield,
   Type,
@@ -20,8 +22,26 @@ export const metadata = {
   title: "設定",
 };
 
+const CONTACT_EMAIL = "osikanrityou@gmail.com";
+
 export default async function SettingsPage() {
   const user = await getAuthUser();
+
+  const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+    "【Oshica】お問い合わせ",
+  )}&body=${encodeURIComponent(
+    `■お問い合わせ内容
+
+----------------------------------------
+
+（こちらに内容をご記入ください）
+
+----------------------------------------
+
+アプリバージョン：1.0.0
+端末：
+`,
+  )}`;
 
   return (
     <MobilePage className="bg-oshica-bg pb-36">
@@ -111,50 +131,102 @@ export default async function SettingsPage() {
             </OshicaCard>
           </Link>
 
-          <OshicaCard>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Bell className="h-5 w-5 text-oshica-primary" />
-                <div>
-                  <p className="font-bold text-oshica-text">通知設定</p>
-                  <p className="text-sm text-oshica-primary">
-                    締切通知（近日実装）
-                  </p>
+          <Link href="/settings/notifications" className="block">
+            <OshicaCard>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Bell className="h-5 w-5 text-oshica-primary" />
+                  <div>
+                    <p className="font-bold text-oshica-text">通知設定</p>
+                    <p className="text-sm text-oshica-primary">
+                      リマインダー通知を管理
+                    </p>
+                  </div>
                 </div>
+
+                <ChevronRight className="h-5 w-5 text-oshica-primary" />
               </div>
-              <ChevronRight className="h-5 w-5 text-oshica-primary" />
-            </div>
-          </OshicaCard>
+            </OshicaCard>
+          </Link>
+
+          <Link href="/terms" className="block">
+            <OshicaCard>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Shield className="h-5 w-5 text-oshica-primary" />
+                  <div>
+                    <p className="font-bold text-oshica-text">利用規約</p>
+                    <p className="text-sm text-oshica-primary">
+                      サービス利用時のルール
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-oshica-primary" />
+              </div>
+            </OshicaCard>
+          </Link>
+
+          <Link href="/privacy" className="block">
+            <OshicaCard>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Shield className="h-5 w-5 text-oshica-primary" />
+                  <div>
+                    <p className="font-bold text-oshica-text">
+                      プライバシーポリシー
+                    </p>
+                    <p className="text-sm text-oshica-primary">
+                      個人情報の取り扱い
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-oshica-primary" />
+              </div>
+            </OshicaCard>
+          </Link>
+
+          <Link href="/licenses" className="block">
+            <OshicaCard>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-5 w-5 text-oshica-primary" />
+                  <div>
+                    <p className="font-bold text-oshica-text">ライセンス</p>
+                    <p className="text-sm text-oshica-primary">
+                      利用しているライブラリ
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-oshica-primary" />
+              </div>
+            </OshicaCard>
+          </Link>
+
+          <a href={mailto} className="block">
+            <OshicaCard>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Crown className="h-5 w-5 text-oshica-primary" />
+                  <div>
+                    <p className="font-bold text-oshica-text">お問い合わせ</p>
+                    <p className="text-sm text-oshica-primary">
+                      ご意見・不具合報告
+                    </p>
+                  </div>
+                </div>
+
+                <ChevronRight className="h-5 w-5 text-oshica-primary" />
+              </div>
+            </OshicaCard>
+          </a>
 
           <OshicaCard>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Shield className="h-5 w-5 text-oshica-primary" />
-                <div>
-                  <p className="font-bold text-oshica-text">
-                    利用規約・プライバシーポリシー
-                  </p>
-                  <p className="text-sm text-oshica-primary">
-                    公開前に追加予定
-                  </p>
-                </div>
+            <div className="flex items-center gap-3">
+              <Info className="h-5 w-5 text-oshica-primary" />
+              <div>
+                <p className="font-bold text-oshica-text">Oshica</p>
+                <p className="text-sm text-oshica-primary">Version 1.0.0</p>
               </div>
-              <ChevronRight className="h-5 w-5 text-oshica-primary" />
-            </div>
-          </OshicaCard>
-
-          <OshicaCard>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Crown className="h-5 w-5 text-oshica-primary" />
-                <div>
-                  <p className="font-bold text-oshica-text">お問い合わせ</p>
-                  <p className="text-sm text-oshica-primary">
-                    ご意見・不具合報告
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="h-5 w-5 text-oshica-primary" />
             </div>
           </OshicaCard>
         </div>

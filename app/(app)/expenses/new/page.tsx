@@ -37,10 +37,11 @@ export default async function NewExpensePage() {
         <OshicaCard className="space-y-4">
           <label className="block">
             <span className="text-sm font-bold text-oshica-text">推し</span>
+
             <select
               name="oshiId"
               required
-              className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block h-12 w-full min-w-0 appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             >
               <option value="">推しを選択</option>
               {oshis?.map((oshi: any) => (
@@ -52,16 +53,20 @@ export default async function NewExpensePage() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-bold text-oshica-text">タイトル</span>
+            <span className="text-sm font-bold text-oshica-text">
+              タイトル
+            </span>
+
             <input
               name="title"
               required
-              className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block h-12 w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
 
           <label className="block">
             <span className="text-sm font-bold text-oshica-text">金額</span>
+
             <div className="relative mt-2">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-oshica-primary">
                 ¥
@@ -71,7 +76,7 @@ export default async function NewExpensePage() {
                 type="number"
                 name="amount"
                 required
-                className="block w-full min-w-0 rounded-2xl border border-oshica-border bg-white py-3 pl-9 pr-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="block h-12 w-full min-w-0 rounded-2xl border border-oshica-border bg-white pl-9 pr-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </div>
           </label>
@@ -80,10 +85,11 @@ export default async function NewExpensePage() {
         <OshicaCard>
           <label className="block">
             <span className="text-sm font-bold text-oshica-text">日付</span>
+
             <input
               type="date"
               name="spentAt"
-              className="mt-2 block w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
         </OshicaCard>
@@ -91,6 +97,7 @@ export default async function NewExpensePage() {
         <OshicaCard>
           <label className="block">
             <span className="text-sm font-bold text-oshica-text">メモ</span>
+
             <textarea
               name="memo"
               rows={4}

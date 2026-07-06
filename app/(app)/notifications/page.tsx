@@ -5,7 +5,7 @@ import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaEmptyState } from "@/components/oshica/OshicaEmptyState";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { createClient } from "@/lib/supabase/server";
-import { syncReminders } from "./actions";
+import { markAllRemindersRead, syncReminders } from "./actions";
 
 export const metadata = {
   title: "通知",
@@ -95,12 +95,25 @@ export default async function NotificationsPage() {
 
       <section className="mt-8 pb-10">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-black text-oshica-text">
-            リマインダー
-          </h2>
-          <p className="text-xs font-bold text-oshica-primary">
-            未読 {unreadCount}件
-          </p>
+          <div>
+            <h2 className="text-sm font-black text-oshica-text">
+              リマインダー
+            </h2>
+            <p className="mt-1 text-xs font-bold text-oshica-primary">
+              未読 {unreadCount}件
+            </p>
+          </div>
+
+          {unreadCount > 0 && (
+            <form action={markAllRemindersRead}>
+              <button
+                type="submit"
+                className="rounded-full bg-white px-3 py-2 text-xs font-bold text-oshica-primary shadow-sm transition active:scale-95"
+              >
+                すべて既読
+              </button>
+            </form>
+          )}
         </div>
 
         <div className="space-y-3">

@@ -21,9 +21,7 @@ export default async function EditExpensePage({ params }: Props) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
   const { data: expense } = await supabase
     .from("expenses")
@@ -32,9 +30,7 @@ export default async function EditExpensePage({ params }: Props) {
     .eq("user_id", user.id)
     .single();
 
-  if (!expense) {
-    redirect("/expenses");
-  }
+  if (!expense) redirect("/expenses");
 
   const { data: oshis } = await supabase
     .from("oshis")
@@ -81,7 +77,7 @@ export default async function EditExpensePage({ params }: Props) {
             <select
               name="oshiId"
               defaultValue={expense.oshi_id ?? ""}
-              className="mt-2 block h-12 w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block h-12 w-full min-w-0 appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             >
               <option value="">推しを選択</option>
               {oshis?.map((oshi: any) => (
@@ -101,7 +97,7 @@ export default async function EditExpensePage({ params }: Props) {
               name="title"
               defaultValue={expense.title}
               required
-              className="mt-2 block h-12 w-full rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block h-12 w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
 
@@ -118,7 +114,7 @@ export default async function EditExpensePage({ params }: Props) {
                 name="amount"
                 defaultValue={expense.amount}
                 required
-                className="block h-12 w-full rounded-2xl border border-oshica-border bg-white pl-10 pr-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="block h-12 w-full min-w-0 rounded-2xl border border-oshica-border bg-white pl-10 pr-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </div>
           </label>
@@ -145,7 +141,7 @@ export default async function EditExpensePage({ params }: Props) {
               name="memo"
               defaultValue={expense.notes ?? expense.memo ?? ""}
               rows={4}
-              className="mt-2 w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block w-full min-w-0 resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
         </OshicaCard>

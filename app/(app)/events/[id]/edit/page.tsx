@@ -81,7 +81,7 @@ export default async function EditEventPage({ params }: Props) {
             <select
               name="oshiId"
               defaultValue={event.oshi_id ?? ""}
-              className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text"
+              className="mt-2 block h-12 w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             >
               <option value="">選択なし</option>
 
@@ -102,7 +102,7 @@ export default async function EditEventPage({ params }: Props) {
               name="title"
               defaultValue={event.title}
               required
-              className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text"
+              className="mt-2 block h-12 w-full rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
         </OshicaCard>
@@ -117,7 +117,7 @@ export default async function EditEventPage({ params }: Props) {
               type="date"
               name="eventDate"
               defaultValue={event.event_date ?? ""}
-              className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text"
+              className="mt-2 block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
 
@@ -128,7 +128,7 @@ export default async function EditEventPage({ params }: Props) {
               type="date"
               name="deadline"
               defaultValue={event.deadline ?? ""}
-              className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text"
+              className="mt-2 block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
         </OshicaCard>
@@ -141,7 +141,7 @@ export default async function EditEventPage({ params }: Props) {
               name="memo"
               defaultValue={event.memo ?? ""}
               rows={5}
-              className="mt-2 w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text"
+              className="mt-2 block w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
         </OshicaCard>
