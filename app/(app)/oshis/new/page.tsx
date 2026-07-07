@@ -8,8 +8,7 @@ import { toast } from "sonner";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
-import { isOverLimit } from "@/lib/plan-limit";
-import { PLAN_LIMITS, normalizePlan } from "@/lib/plans";
+import { PLAN_LIMITS, isLimitReached, normalizePlan } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/client";
 
 export default function NewOshiPage() {
@@ -54,7 +53,7 @@ export default function NewOshiPage() {
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id);
 
-      setLimitReached(isOverLimit(count ?? 0, limit));
+      setLimitReached(isLimitReached(count ?? 0, limit));
     };
 
     checkLimit();
