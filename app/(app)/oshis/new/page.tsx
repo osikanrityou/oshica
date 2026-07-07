@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PawPrint } from "lucide-react";
+import { Crown, PawPrint } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
+import { isOverLimit } from "@/lib/plan-limit";
+import { PLAN_LIMITS, normalizePlan } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/client";
-
-const FREE_OSHI_LIMIT = 3;
 
 export default function NewOshiPage() {
   const router = useRouter();
@@ -23,6 +23,10 @@ export default function NewOshiPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<"free" | "plus" | "premium">(
+    "free"
+  );
+  const [oshiLimit, setOshiLimit] = useState<number | null>(3);
 
   useEffect(() => {
     const checkLimit = async () => {
@@ -32,12 +36,25 @@ export default function NewOshiPage() {
 
       if (!user) return;
 
+      const { data: subscription } = await supabase
+        .from("subscriptions")
+        .select("plan, status")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+
+      const plan = normalizePlan(subscription?.plan);
+      const limit = PLAN_LIMITS[plan].oshiLimit;
+
+      setCurrentPlan(plan);
+      setOshiLimit(limit);
+
       const { count } = await supabase
         .from("oshis")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id);
 
-      setLimitReached((count ?? 0) >= FREE_OSHI_LIMIT);
+      setLimitReached(isOverLimit(count ?? 0, limit));
     };
 
     checkLimit();
@@ -68,7 +85,11 @@ export default function NewOshiPage() {
     }
 
     if (limitReached) {
-      toast.error("Freeプランでは推しを3人まで登録できます");
+      toast.error(
+        currentPlan === "premium"
+          ? "Premiumプランでは無制限で登録できます"
+          : `${currentPlan === "plus" ? "Plus" : "Free"}プランでは推しを${oshiLimit}人まで登録できます`
+      );
       setLoading(false);
       return;
     }
@@ -117,30 +138,60 @@ export default function NewOshiPage() {
     router.refresh();
   };
 
+  const limitText =
+    oshiLimit === null
+      ? "Premiumプランでは推しを無制限で登録できます"
+      : `${currentPlan === "plus" ? "Plus" : "Free"}プランでは推しを${oshiLimit}人まで登録できます`;
+
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
       <OshicaPageHeader
         label="Oshi"
         title="推し登録"
-        description="Freeプランでは推しを3人まで登録できます"
+        description={limitText}
         icon={<PawPrint className="h-5 w-5" />}
       />
 
       {limitReached ? (
         <OshicaCard className="mt-5 text-center">
           <div className="py-6">
-            <p className="font-bold text-oshica-text">
-              Freeプランの登録上限に達しました
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+              <Crown className="h-6 w-6" />
+            </div>
+
+            <p className="mt-4 font-bold text-oshica-text">
+              登録上限に達しました
             </p>
-            <p className="mt-2 text-sm font-bold text-oshica-primary">
-              推しは3人まで登録できます
+
+            <p className="mt-2 text-sm leading-7 text-oshica-muted">
+              {limitText}
             </p>
-            <Link
-              href="/oshis"
-              className="mt-5 inline-flex rounded-full bg-oshica-primary px-5 py-3 text-sm font-bold text-white"
-            >
-              推し一覧へ戻る
-            </Link>
+
+            <div className="mt-5 rounded-2xl bg-oshica-bg p-4 text-left text-sm">
+              <p className="font-bold text-oshica-text">Plus（月500円）</p>
+              <p className="mt-1 text-oshica-muted">推し5人・各5件まで</p>
+
+              <p className="mt-4 font-bold text-oshica-text">
+                Premium（月1000円）
+              </p>
+              <p className="mt-1 text-oshica-muted">すべて無制限</p>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3">
+              <Link
+                href="/settings/billing"
+                className="rounded-full bg-oshica-primary px-5 py-3 text-sm font-bold text-white"
+              >
+                プランを見る
+              </Link>
+
+              <Link
+                href="/oshis"
+                className="rounded-full px-5 py-3 text-sm font-bold text-oshica-primary"
+              >
+                推し一覧へ戻る
+              </Link>
+            </div>
           </div>
         </OshicaCard>
       ) : (

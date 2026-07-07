@@ -3,9 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { getPlanLimit, isOverLimit } from "@/lib/plan-limit";
 import { createClient } from "@/lib/supabase/server";
-
-const FREE_PER_OSHI_LIMIT = 3;
 
 export async function createGoods(formData: FormData) {
   const name = formData.get("name");
@@ -33,6 +32,8 @@ export async function createGoods(formData: FormData) {
 
   if (!user) redirect("/login");
 
+  const planLimit = await getPlanLimit("item");
+
   const { count, error: countError } = await supabase
     .from("goods")
     .select("id", { count: "exact", head: true })
@@ -41,8 +42,8 @@ export async function createGoods(formData: FormData) {
 
   if (countError) throw new Error(countError.message);
 
-  if ((count ?? 0) >= FREE_PER_OSHI_LIMIT) {
-    redirect("/goods/new");
+  if (isOverLimit(count ?? 0, planLimit.limit)) {
+    redirect(`/goods/new?error=${encodeURIComponent(planLimit.limitLabel)}`);
   }
 
   const priceNumber =
@@ -53,21 +54,16 @@ export async function createGoods(formData: FormData) {
   const { error } = await supabase.from("goods").insert({
     name: name.trim(),
     price:
-      priceNumber !== null && Number.isFinite(priceNumber)
-        ? priceNumber
-        : null,
+      priceNumber !== null && Number.isFinite(priceNumber) ? priceNumber : null,
     deadline:
       typeof deadline === "string" && deadline.length > 0 ? deadline : null,
     release_date:
       typeof releaseDate === "string" && releaseDate.length > 0
         ? releaseDate
         : null,
-    status:
-      typeof status === "string" && status.length > 0 ? status : "未予約",
+    status: typeof status === "string" && status.length > 0 ? status : "未予約",
     memo:
-      typeof memo === "string" && memo.trim().length > 0
-        ? memo.trim()
-        : null,
+      typeof memo === "string" && memo.trim().length > 0 ? memo.trim() : null,
     oshi_id: oshiId,
     user_id: user.id,
   });
@@ -94,11 +90,7 @@ export async function deleteGoods(formData: FormData) {
 
   if (!user) redirect("/login");
 
-  await supabase
-    .from("goods")
-    .delete()
-    .eq("id", goodsId)
-    .eq("user_id", user.id);
+  await supabase.from("goods").delete().eq("id", goodsId).eq("user_id", user.id);
 
   revalidatePath("/goods");
   revalidatePath("/oshis");
@@ -138,6 +130,8 @@ export async function updateGoods(formData: FormData) {
     typeof oshiId === "string" && oshiId.length > 0 ? oshiId : null;
 
   if (nextOshiId && currentGoods?.oshi_id !== nextOshiId) {
+    const planLimit = await getPlanLimit("item");
+
     const { count, error: countError } = await supabase
       .from("goods")
       .select("id", { count: "exact", head: true })
@@ -146,12 +140,16 @@ export async function updateGoods(formData: FormData) {
 
     if (countError) throw new Error(countError.message);
 
-    if ((count ?? 0) >= FREE_PER_OSHI_LIMIT) {
-      redirect(`/goods/${goodsId}/edit`);
+    if (isOverLimit(count ?? 0, planLimit.limit)) {
+      redirect(
+        `/goods/${goodsId}/edit?error=${encodeURIComponent(
+          planLimit.limitLabel
+        )}`
+      );
     }
   }
 
-  await supabase
+  const { error } = await supabase
     .from("goods")
     .update({
       name: name.trim(),
@@ -168,13 +166,13 @@ export async function updateGoods(formData: FormData) {
       status:
         typeof status === "string" && status.length > 0 ? status : "未予約",
       memo:
-        typeof memo === "string" && memo.trim().length > 0
-          ? memo.trim()
-          : null,
+        typeof memo === "string" && memo.trim().length > 0 ? memo.trim() : null,
       oshi_id: nextOshiId,
     })
     .eq("id", goodsId)
     .eq("user_id", user.id);
+
+  if (error) throw new Error(error.message);
 
   revalidatePath("/goods");
   revalidatePath("/oshis");

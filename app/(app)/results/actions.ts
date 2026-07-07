@@ -3,9 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { getPlanLimit, isOverLimit } from "@/lib/plan-limit";
 import { createClient } from "@/lib/supabase/server";
-
-const FREE_PER_OSHI_LIMIT = 3;
 
 export async function createLotteryResult(formData: FormData) {
   const oshiId = formData.get("oshiId");
@@ -25,22 +24,27 @@ export async function createLotteryResult(formData: FormData) {
 
   if (!user) redirect("/login");
 
+  const planLimit = await getPlanLimit("item");
+
   const { count, error: countError } = await supabase
     .from("lottery_results")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id)
-    .eq("source_id", oshiId);
+    .eq("oshi_id", oshiId);
 
   if (countError) throw new Error(countError.message);
 
-  if ((count ?? 0) >= FREE_PER_OSHI_LIMIT) {
-    redirect("/results/new");
+  if (isOverLimit(count ?? 0, planLimit.limit)) {
+    redirect(`/results/new?error=${encodeURIComponent(planLimit.limitLabel)}`);
   }
 
   const { error } = await supabase.from("lottery_results").insert({
     user_id: user.id,
-    source_type: "当落記録",
-    source_id: oshiId,
+    oshi_id: oshiId,
+    title:
+      typeof notes === "string" && notes.trim().length > 0
+        ? notes.trim()
+        : "当落記録",
     result: typeof result === "string" ? result : "pending",
     announced_at:
       typeof announcedAt === "string" && announcedAt.length > 0
@@ -50,6 +54,7 @@ export async function createLotteryResult(formData: FormData) {
       typeof notes === "string" && notes.trim().length > 0
         ? notes.trim()
         : null,
+    source_type: "当落記録",
   });
 
   if (error) throw new Error(error.message);
@@ -84,22 +89,28 @@ export async function updateLotteryResult(formData: FormData) {
   if (nextOshiId) {
     const { data: currentResult } = await supabase
       .from("lottery_results")
-      .select("source_id")
+      .select("oshi_id")
       .eq("id", resultId)
       .eq("user_id", user.id)
       .single();
 
-    if (currentResult?.source_id !== nextOshiId) {
+    if (currentResult?.oshi_id !== nextOshiId) {
+      const planLimit = await getPlanLimit("item");
+
       const { count, error: countError } = await supabase
         .from("lottery_results")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
-        .eq("source_id", nextOshiId);
+        .eq("oshi_id", nextOshiId);
 
       if (countError) throw new Error(countError.message);
 
-      if ((count ?? 0) >= FREE_PER_OSHI_LIMIT) {
-        redirect(`/results/${resultId}`);
+      if (isOverLimit(count ?? 0, planLimit.limit)) {
+        redirect(
+          `/results/${resultId}/edit?error=${encodeURIComponent(
+            planLimit.limitLabel
+          )}`
+        );
       }
     }
   }
@@ -114,10 +125,14 @@ export async function updateLotteryResult(formData: FormData) {
       typeof notes === "string" && notes.trim().length > 0
         ? notes.trim()
         : null,
+    title:
+      typeof notes === "string" && notes.trim().length > 0
+        ? notes.trim()
+        : "当落記録",
   };
 
   if (nextOshiId) {
-    updateData.source_id = nextOshiId;
+    updateData.oshi_id = nextOshiId;
   }
 
   const { error } = await supabase

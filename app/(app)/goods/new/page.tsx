@@ -1,13 +1,21 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Package } from "lucide-react";
+import { Crown, Package } from "lucide-react";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { createClient } from "@/lib/supabase/server";
 import { createGoods } from "../actions";
 
-export default async function NewGoodsPage() {
+type Props = {
+  searchParams: Promise<{
+    error?: string;
+  }>;
+};
+
+export default async function NewGoodsPage({ searchParams }: Props) {
+  const { error } = await searchParams;
+
   const supabase = (await createClient()) as any;
 
   const {
@@ -31,106 +39,150 @@ export default async function NewGoodsPage() {
         icon={<Package className="h-5 w-5" />}
       />
 
-      <form action={createGoods} className="mt-5 space-y-5">
-        <OshicaCard className="space-y-4">
-          <label className="block">
-            <span className="text-sm font-bold text-oshica-text">推し</span>
-            <select
-              name="oshiId"
-              required
-              className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+      {error ? (
+        <OshicaCard className="mt-5 text-center">
+          <div className="py-6">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+              <Crown className="h-6 w-6" />
+            </div>
+
+            <p className="mt-4 font-bold text-oshica-text">
+              登録上限に達しました
+            </p>
+
+            <p className="mt-2 text-sm leading-7 text-oshica-muted">
+              {error}
+            </p>
+
+            <div className="mt-5 rounded-2xl bg-oshica-bg p-4 text-left text-sm">
+              <p className="font-bold text-oshica-text">Plus（月500円）</p>
+              <p className="mt-1 text-oshica-muted">推し5人・各5件まで</p>
+
+              <p className="mt-4 font-bold text-oshica-text">
+                Premium（月1000円）
+              </p>
+              <p className="mt-1 text-oshica-muted">すべて無制限</p>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3">
+              <Link
+                href="/settings/billing"
+                className="rounded-full bg-oshica-primary px-5 py-3 text-sm font-bold text-white"
+              >
+                プランを見る
+              </Link>
+
+              <Link
+                href="/goods"
+                className="rounded-full px-5 py-3 text-sm font-bold text-oshica-primary"
+              >
+                グッズ一覧へ戻る
+              </Link>
+            </div>
+          </div>
+        </OshicaCard>
+      ) : (
+        <form action={createGoods} className="mt-5 space-y-5">
+          <OshicaCard className="space-y-4">
+            <label className="block">
+              <span className="text-sm font-bold text-oshica-text">推し</span>
+              <select
+                name="oshiId"
+                required
+                className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              >
+                <option value="">推しを選択</option>
+                {oshis?.map((oshi: any) => (
+                  <option key={oshi.id} value={oshi.id}>
+                    {oshi.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-bold text-oshica-text">名前</span>
+              <input
+                name="name"
+                type="text"
+                required
+                className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-bold text-oshica-text">金額</span>
+              <input
+                name="price"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              />
+            </label>
+          </OshicaCard>
+
+          <OshicaCard className="space-y-4">
+            <label className="block">
+              <span className="text-sm font-bold text-oshica-text">締切日</span>
+              <input
+                type="date"
+                name="deadline"
+                className="mt-2 block w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-bold text-oshica-text">発売日</span>
+              <input
+                type="date"
+                name="releaseDate"
+                className="mt-2 block w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-bold text-oshica-text">状態</span>
+              <select
+                name="status"
+                defaultValue="未予約"
+                className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              >
+                <option>未予約</option>
+                <option>予約済み</option>
+                <option>購入済み</option>
+              </select>
+            </label>
+          </OshicaCard>
+
+          <OshicaCard>
+            <label className="block">
+              <span className="text-sm font-bold text-oshica-text">メモ</span>
+              <textarea
+                name="memo"
+                rows={5}
+                className="mt-2 block w-full min-w-0 resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              />
+            </label>
+          </OshicaCard>
+
+          <div className="flex items-center justify-between gap-3 pt-2">
+            <Link
+              href="/goods"
+              className="rounded-full px-4 py-2 text-sm font-bold text-oshica-primary"
             >
-              <option value="">推しを選択</option>
-              {oshis?.map((oshi: any) => (
-                <option key={oshi.id} value={oshi.id}>
-                  {oshi.name}
-                </option>
-              ))}
-            </select>
-          </label>
+              キャンセル
+            </Link>
 
-          <label className="block">
-            <span className="text-sm font-bold text-oshica-text">名前</span>
-            <input
-              name="name"
-              type="text"
-              required
-              className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-bold text-oshica-text">金額</span>
-            <input
-              name="price"
-              type="number"
-              inputMode="numeric"
-              min="0"
-              className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
-            />
-          </label>
-        </OshicaCard>
-
-        <OshicaCard className="space-y-4">
-          <label className="block">
-            <span className="text-sm font-bold text-oshica-text">締切日</span>
-            <input
-              type="date"
-              name="deadline"
-              className="mt-2 block w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-bold text-oshica-text">発売日</span>
-            <input
-              type="date"
-              name="releaseDate"
-              className="mt-2 block w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-bold text-oshica-text">状態</span>
-            <select
-              name="status"
-              defaultValue="未予約"
-              className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            <button
+              type="submit"
+              className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95"
             >
-              <option>未予約</option>
-              <option>予約済み</option>
-              <option>購入済み</option>
-            </select>
-          </label>
-        </OshicaCard>
-
-        <OshicaCard>
-          <label className="block">
-            <span className="text-sm font-bold text-oshica-text">メモ</span>
-            <textarea
-              name="memo"
-              rows={5}
-              className="mt-2 block w-full min-w-0 resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
-            />
-          </label>
-        </OshicaCard>
-
-        <div className="flex items-center justify-between gap-3 pt-2">
-          <Link
-            href="/goods"
-            className="rounded-full px-4 py-2 text-sm font-bold text-oshica-primary"
-          >
-            キャンセル
-          </Link>
-
-          <button
-            type="submit"
-            className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95"
-          >
-            登録する
-          </button>
-        </div>
-      </form>
+              登録する
+            </button>
+          </div>
+        </form>
+      )}
     </main>
   );
 }

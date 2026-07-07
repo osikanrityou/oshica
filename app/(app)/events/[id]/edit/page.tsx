@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { ArrowLeft, CalendarDays, Crown } from "lucide-react";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { createClient } from "@/lib/supabase/server";
@@ -10,10 +10,14 @@ type Props = {
   params: Promise<{
     id: string;
   }>;
+  searchParams: Promise<{
+    error?: string;
+  }>;
 };
 
-export default async function EditEventPage({ params }: Props) {
+export default async function EditEventPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { error } = await searchParams;
 
   const supabase = (await createClient()) as any;
 
@@ -56,6 +60,29 @@ export default async function EditEventPage({ params }: Props) {
 
         <div className="w-10" />
       </div>
+
+      {error ? (
+        <OshicaCard className="mb-5 text-center">
+          <div className="py-5">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+              <Crown className="h-6 w-6" />
+            </div>
+
+            <p className="mt-4 font-bold text-oshica-text">
+              登録上限に達しました
+            </p>
+
+            <p className="mt-2 text-sm leading-7 text-oshica-muted">{error}</p>
+
+            <Link
+              href="/settings/billing"
+              className="mt-5 inline-flex rounded-full bg-oshica-primary px-5 py-3 text-sm font-bold text-white"
+            >
+              プランを見る
+            </Link>
+          </div>
+        </OshicaCard>
+      ) : null}
 
       <OshicaCard className="py-4 text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">

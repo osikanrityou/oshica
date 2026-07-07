@@ -1,51 +1,166 @@
 import Link from "next/link";
+import { ArrowLeft, Check, Crown, Sparkles } from "lucide-react";
 
-export const metadata = { title: "プレミアム" };
+import { OshicaCard } from "@/components/oshica/OshicaCard";
+import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
+import { getCurrentPlan } from "@/lib/subscription";
+import { createCheckoutSession } from "./actions";
 
-export default function BillingPage() {
+export const metadata = { title: "料金プラン" };
+
+const plans = [
+  {
+    key: "plus",
+    name: "Plus",
+    price: "¥500",
+    description: "推し活の予定が少し増えてきた方向け",
+    features: ["推し5人まで", "各機能5件まで", "Freeより多く記録可能"],
+    button: "Plusにアップグレード",
+    highlight: true,
+  },
+  {
+    key: "premium",
+    name: "Premium",
+    price: "¥1,000",
+    description: "制限なく推し活をまとめて管理したい方向け",
+    features: ["推し登録 無制限", "各機能 無制限", "今後の追加機能も優先対応予定"],
+    button: "Premiumにアップグレード",
+    highlight: false,
+  },
+  {
+    key: "free",
+    name: "Free",
+    price: "¥0",
+    description: "まずは無料で始めたい方向け",
+    features: ["推し3人まで", "各機能3件まで", "基本機能の利用"],
+    button: "現在のプラン",
+    highlight: false,
+  },
+];
+
+export default async function BillingPage() {
+  const currentPlan = await getCurrentPlan();
+
   return (
-    <main className="mx-auto max-w-md px-5 py-8">
-      <Link href="/settings" className="text-sm text-sky-500">
-        ← 設定へ戻る
-      </Link>
-
-      <section className="mt-6 rounded-3xl border bg-white p-6 shadow-sm">
-        <p className="text-sm font-bold text-sky-500">Oshica Premium</p>
-
-        <h1 className="mt-3 text-2xl font-bold">
-          推し活管理をもっと便利に
-        </h1>
-
-        <p className="mt-3 text-sm text-zinc-500">
-          無料プランの登録上限を解除し、通知やバックアップ機能を使えるようにします。
-        </p>
-
-        <div className="mt-6 rounded-3xl bg-sky-50 p-5 text-center">
-          <p className="text-sm text-zinc-500">月額</p>
-          <p className="mt-1 text-3xl font-bold">¥300</p>
-          <p className="mt-1 text-xs text-zinc-500">
-            V1公開時は準備中
-          </p>
-        </div>
-
-        <ul className="mt-6 space-y-3 text-sm">
-          <li>✓ 推し登録 無制限</li>
-          <li>✓ イベント登録 無制限</li>
-          <li>✓ グッズ登録 無制限</li>
-          <li>✓ 支出登録 無制限</li>
-          <li>✓ 通知カスタマイズ</li>
-          <li>✓ データバックアップ</li>
-          <li>✓ 広告非表示</li>
-        </ul>
-
-        <button
-          type="button"
-          disabled
-          className="mt-6 w-full rounded-2xl bg-zinc-300 py-3 font-bold text-white"
+    <main className="mx-auto max-w-sm bg-oshica-bg px-5 pb-40 pt-6 text-oshica-text">
+      <div className="mb-4">
+        <Link
+          href="/settings"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-oshica-primary shadow-sm"
         >
-          準備中
-        </button>
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      </div>
+
+      <OshicaPageHeader
+        label="Plan"
+        title="料金プラン"
+        description={`現在のプラン：${
+          currentPlan === "premium"
+            ? "Premium"
+            : currentPlan === "plus"
+              ? "Plus"
+              : "Free"
+        }`}
+        icon={<Crown className="h-5 w-5" />}
+      />
+
+      <section className="mt-4 space-y-3">
+        {plans.map((plan) => {
+          const isCurrentPlan = plan.key === currentPlan;
+          const isFree = plan.key === "free";
+
+          return (
+            <OshicaCard
+              key={plan.key}
+              className={
+                isCurrentPlan || plan.highlight
+                  ? "border-2 border-oshica-primary p-4"
+                  : "p-4"
+              }
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-black text-oshica-primary">
+                      {plan.name}
+                    </p>
+
+                    {isCurrentPlan ? (
+                      <span className="rounded-full bg-oshica-primary px-2.5 py-0.5 text-[10px] font-bold text-white">
+                        加入中
+                      </span>
+                    ) : plan.highlight ? (
+                      <span className="rounded-full bg-oshica-bg px-2.5 py-0.5 text-[10px] font-bold text-oshica-primary">
+                        おすすめ
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <p className="mt-1.5 text-2xl font-black text-oshica-text">
+                    {plan.price}
+                    <span className="ml-1 text-xs font-bold text-oshica-primary">
+                      /月
+                    </span>
+                  </p>
+
+                  <p className="mt-1.5 text-xs leading-5 text-oshica-primary">
+                    {plan.description}
+                  </p>
+                </div>
+
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+                  {plan.key === "premium" ? (
+                    <Sparkles className="h-4 w-4" />
+                  ) : (
+                    <Crown className="h-4 w-4" />
+                  )}
+                </div>
+              </div>
+
+              <ul className="mt-4 space-y-2">
+                {plan.features.map((feature) => (
+                  <li
+                    key={feature}
+                    className="flex items-center gap-2 text-xs font-bold text-oshica-text"
+                  >
+                    <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+                      <Check className="h-3 w-3" />
+                    </span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              {isCurrentPlan || isFree ? (
+                <button
+                  type="button"
+                  disabled
+                  className="mt-4 w-full rounded-full bg-oshica-bg px-4 py-2.5 text-xs font-bold text-oshica-primary"
+                >
+                  {isCurrentPlan ? "現在のプラン" : plan.button}
+                </button>
+              ) : (
+                <form action={createCheckoutSession}>
+                  <input type="hidden" name="plan" value={plan.key} />
+                  <button
+                    type="submit"
+                    className="mt-4 w-full rounded-full bg-oshica-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm transition active:scale-95"
+                  >
+                    {plan.button}
+                  </button>
+                </form>
+              )}
+            </OshicaCard>
+          );
+        })}
       </section>
+
+      <p className="mt-4 text-center text-[11px] leading-5 text-oshica-primary">
+        決済はStripeの安全な決済画面で行われます。
+        <br />
+        いつでも解約できる月額プランです。
+      </p>
     </main>
   );
 }

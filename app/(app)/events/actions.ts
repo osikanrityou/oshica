@@ -3,9 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { getPlanLimit, isOverLimit } from "@/lib/plan-limit";
 import { createClient } from "@/lib/supabase/server";
-
-const FREE_PER_OSHI_LIMIT = 3;
 
 export async function createEvent(formData: FormData) {
   const title = formData.get("title");
@@ -31,6 +30,8 @@ export async function createEvent(formData: FormData) {
 
   if (!user) redirect("/login");
 
+  const planLimit = await getPlanLimit("item");
+
   const { count, error: countError } = await supabase
     .from("events")
     .select("id", { count: "exact", head: true })
@@ -39,8 +40,8 @@ export async function createEvent(formData: FormData) {
 
   if (countError) throw new Error(countError.message);
 
-  if ((count ?? 0) >= FREE_PER_OSHI_LIMIT) {
-    redirect("/events/new");
+  if (isOverLimit(count ?? 0, planLimit.limit)) {
+    redirect(`/events/new?error=${encodeURIComponent(planLimit.limitLabel)}`);
   }
 
   const { error } = await supabase.from("events").insert({
@@ -95,6 +96,8 @@ export async function updateEvent(formData: FormData) {
     typeof oshiId === "string" && oshiId.length > 0 ? oshiId : null;
 
   if (nextOshiId && currentEvent?.oshi_id !== nextOshiId) {
+    const planLimit = await getPlanLimit("item");
+
     const { count, error: countError } = await supabase
       .from("events")
       .select("id", { count: "exact", head: true })
@@ -103,12 +106,16 @@ export async function updateEvent(formData: FormData) {
 
     if (countError) throw new Error(countError.message);
 
-    if ((count ?? 0) >= FREE_PER_OSHI_LIMIT) {
-      redirect(`/events/${eventId}/edit`);
+    if (isOverLimit(count ?? 0, planLimit.limit)) {
+      redirect(
+        `/events/${eventId}/edit?error=${encodeURIComponent(
+          planLimit.limitLabel
+        )}`
+      );
     }
   }
 
-  await supabase
+  const { error } = await supabase
     .from("events")
     .update({
       title: title.trim(),
@@ -124,6 +131,8 @@ export async function updateEvent(formData: FormData) {
     })
     .eq("id", eventId)
     .eq("user_id", user.id);
+
+  if (error) throw new Error(error.message);
 
   revalidatePath("/events");
   revalidatePath("/oshis");

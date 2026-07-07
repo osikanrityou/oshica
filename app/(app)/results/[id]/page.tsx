@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, Trophy } from "lucide-react";
+import { ChevronLeft, Crown, Trophy } from "lucide-react";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { DeleteButton } from "@/components/shared/DeleteButton";
@@ -9,10 +9,15 @@ import { deleteLotteryResult, updateLotteryResult } from "../actions";
 
 type Props = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{
+    error?: string;
+  }>;
 };
 
-export default async function EditResultPage({ params }: Props) {
+export default async function EditResultPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { error } = await searchParams;
+
   const supabase = (await createClient()) as any;
 
   const {
@@ -57,8 +62,34 @@ export default async function EditResultPage({ params }: Props) {
           </div>
         </div>
 
+        {error ? (
+          <OshicaCard className="mb-5 text-center">
+            <div className="py-5">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+                <Crown className="h-6 w-6" />
+              </div>
+
+              <p className="mt-4 font-bold text-oshica-text">
+                登録上限に達しました
+              </p>
+
+              <p className="mt-2 text-sm leading-7 text-oshica-muted">
+                {error}
+              </p>
+
+              <Link
+                href="/settings/billing"
+                className="mt-5 inline-flex rounded-full bg-oshica-primary px-5 py-3 text-sm font-bold text-white"
+              >
+                プランを見る
+              </Link>
+            </div>
+          </OshicaCard>
+        ) : null}
+
         <form action={updateLotteryResult} className="space-y-5">
           <input type="hidden" name="resultId" value={item.id} />
+          <input type="hidden" name="oshiId" value={item.source_id ?? ""} />
 
           <OshicaCard className="space-y-4">
             <label className="block">
