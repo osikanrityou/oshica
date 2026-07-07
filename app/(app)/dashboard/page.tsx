@@ -4,24 +4,17 @@ import {
   Bell,
   CalendarDays,
   ChevronRight,
-  Home,
   Package,
   PawPrint,
-  Settings,
-  Trophy,
-  Users,
   Wallet,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
-
-
+import { PLAN_LIMITS } from "@/lib/plans";
+import { getCurrentPlan } from "@/lib/subscription";
 
 export const metadata = { title: "ホーム" };
-
-const FREE_OSHI_LIMIT = 3;
-const FREE_PER_OSHI_LIMIT = 3;
 
 function getDaysLeft(dateText: string) {
   const today = new Date();
@@ -31,7 +24,7 @@ function getDaysLeft(dateText: string) {
   target.setHours(0, 0, 0, 0);
 
   return Math.ceil(
-    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
   );
 }
 
@@ -51,6 +44,25 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  const currentPlan = await getCurrentPlan();
+  const planLimits = PLAN_LIMITS[currentPlan];
+
+  const planLabel =
+    currentPlan === "premium"
+      ? "Premium"
+      : currentPlan === "plus"
+        ? "Plus"
+        : "Free";
+
+  const oshiLimitText =
+    planLimits.oshiLimit === null ? "無制限" : `${planLimits.oshiLimit}人まで`;
+
+  const itemLimitText =
+    planLimits.itemLimit === null ? "無制限" : `${planLimits.itemLimit}件まで`;
+
+  const usageLimitText =
+    planLimits.itemLimit === null ? "無制限" : `各${planLimits.itemLimit}件まで`;
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -79,9 +91,11 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false });
 
   const now = new Date();
+
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
     .toISOString()
     .slice(0, 10);
+
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
     .toISOString()
     .slice(0, 10);
@@ -102,22 +116,23 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
-    <div className="mb-6 flex items-center justify-between">
-  <div className="flex items-center gap-3">
-    <SidebarMenuButton />
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <SidebarMenuButton />
 
-    <p className="text-base font-black tracking-wide text-oshica-secondary">
-      Oshica
-    </p>
-  </div>
+          <p className="text-base font-black tracking-wide text-oshica-secondary">
+            Oshica
+          </p>
+        </div>
 
-  <Link
-    href="/notifications"
-    className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-primary shadow-sm"
-  >
-    <Bell className="h-5 w-5" />
-  </Link>
-</div>
+        <Link
+          href="/notifications"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-primary shadow-sm"
+        >
+          <Bell className="h-5 w-5" />
+        </Link>
+      </div>
+
       <section className="mt-7 overflow-hidden rounded-[2rem] bg-white p-5 shadow-sm">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -132,9 +147,9 @@ export default async function DashboardPage() {
             </h1>
 
             <p className="mt-2 text-sm leading-relaxed text-oshica-primary">
-              Freeプランは推し{FREE_OSHI_LIMIT}人まで。
+              {planLabel}プランは推し{oshiLimitText}。
               <br />
-              各推しごとに3件ずつ管理できます。
+              各推しごとに{itemLimitText}管理できます。
             </p>
           </div>
 
@@ -173,14 +188,19 @@ export default async function DashboardPage() {
       <section className="mt-5 rounded-[2rem] bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-black text-oshica-primary">Free</p>
+            <p className="text-xs font-black text-oshica-primary">
+              {planLabel}
+            </p>
             <p className="mt-1 text-sm font-black text-oshica-text">
-              推し {oshis?.length ?? 0}/{FREE_OSHI_LIMIT}人
+              推し {oshis?.length ?? 0}
+              {planLimits.oshiLimit === null
+                ? "人"
+                : `/${planLimits.oshiLimit}人`}
             </p>
           </div>
 
           <div className="rounded-full bg-oshica-bg px-3 py-1 text-xs font-bold text-oshica-primary">
-            各3件まで
+            {usageLimitText}
           </div>
         </div>
 
@@ -190,7 +210,9 @@ export default async function DashboardPage() {
               イベント
             </p>
             <p className="mt-1 text-sm font-black text-oshica-text">
-              {FREE_PER_OSHI_LIMIT}件
+              {planLimits.itemLimit === null
+                ? "無制限"
+                : `${planLimits.itemLimit}件`}
             </p>
           </div>
 
@@ -199,14 +221,18 @@ export default async function DashboardPage() {
               グッズ
             </p>
             <p className="mt-1 text-sm font-black text-oshica-text">
-              {FREE_PER_OSHI_LIMIT}件
+              {planLimits.itemLimit === null
+                ? "無制限"
+                : `${planLimits.itemLimit}件`}
             </p>
           </div>
 
           <div className="rounded-2xl bg-oshica-bg px-2 py-3">
             <p className="text-[10px] font-bold text-oshica-primary">支出</p>
             <p className="mt-1 text-sm font-black text-oshica-text">
-              {FREE_PER_OSHI_LIMIT}件
+              {planLimits.itemLimit === null
+                ? "無制限"
+                : `${planLimits.itemLimit}件`}
             </p>
           </div>
         </div>
@@ -287,11 +313,15 @@ export default async function DashboardPage() {
                 0;
 
               const nextOshiSchedule = schedules?.find(
-                (item: any) => item.oshi_id === oshi.id
+                (item: any) => item.oshi_id === oshi.id,
               );
 
               return (
-                <Link key={oshi.id} href={`/oshis/${oshi.id}`} className="block">
+                <Link
+                  key={oshi.id}
+                  href={`/oshis/${oshi.id}`}
+                  className="block"
+                >
                   <div className="rounded-[2rem] bg-white p-5 shadow-sm transition-all duration-200 active:scale-[0.98]">
                     <div className="flex items-center gap-4">
                       <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-oshica-bg ring-2 ring-white shadow-sm">
@@ -318,8 +348,18 @@ export default async function DashboardPage() {
                         )}
 
                         <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-oshica-primary">
-                          <span>予定 {oshiEvents}/3</span>
-                          <span>グッズ {oshiGoods}/3</span>
+                          <span>
+                            予定 {oshiEvents}
+                            {planLimits.itemLimit === null
+                              ? "件"
+                              : `/${planLimits.itemLimit}`}
+                          </span>
+                          <span>
+                            グッズ {oshiGoods}
+                            {planLimits.itemLimit === null
+                              ? "件"
+                              : `/${planLimits.itemLimit}`}
+                          </span>
                           <span>¥{oshiExpense.toLocaleString()}</span>
                         </div>
                       </div>

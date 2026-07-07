@@ -17,6 +17,8 @@ import { ROUTES } from "@/lib/constants/routes";
 import { getAuthUser } from "@/lib/supabase/session";
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
+import { PLAN_LIMITS } from "@/lib/plans";
+import { getCurrentPlan } from "@/lib/subscription";
 
 export const metadata = {
   title: "設定",
@@ -26,6 +28,19 @@ const CONTACT_EMAIL = "osikanrityou@gmail.com";
 
 export default async function SettingsPage() {
   const user = await getAuthUser();
+  const currentPlan = await getCurrentPlan();
+  const planLimits = PLAN_LIMITS[currentPlan];
+
+  const planLabel =
+    currentPlan === "premium" ? "Premium" : currentPlan === "plus" ? "Plus" : "Free";
+  const planDescription =
+    currentPlan === "premium"
+      ? "登録数を気にせず推し活を管理できます"
+      : currentPlan === "plus"
+        ? "Freeより多く推し活を管理できます"
+        : "Premiumについて見る";
+  const limitBadgeText =
+    planLimits.oshiLimit === null ? "無制限" : "上限あり";
 
   const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
     "【Oshica】お問い合わせ",
@@ -74,19 +89,19 @@ export default async function SettingsPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-bold text-oshica-primary">
-                  Premium
+                  現在のプラン
                 </p>
                 <p className="mt-1 text-xl font-black text-oshica-text">
-                  Free
+                  {planLabel}
                 </p>
                 <p className="mt-1 text-sm text-oshica-primary">
-                  Premiumについて見る
+                  {planDescription}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <span className="rounded-full bg-oshica-bg px-3 py-1 text-xs font-bold text-oshica-secondary">
-                  上限あり
+                  {limitBadgeText}
                 </span>
                 <ChevronRight className="h-5 w-5 text-oshica-primary" />
               </div>
