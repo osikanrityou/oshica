@@ -4,7 +4,7 @@ import { ArrowLeft, Check, Crown, Sparkles } from "lucide-react";
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { getCurrentPlan } from "@/lib/subscription";
-import { createCheckoutSession } from "./actions";
+import { createCheckoutSession, syncCheckoutSession } from "./actions";
 
 export const metadata = { title: "料金プラン" };
 
@@ -38,7 +38,20 @@ const plans = [
   },
 ];
 
-export default async function BillingPage() {
+type Props = {
+  searchParams?: Promise<{
+    checkout?: string;
+    session_id?: string;
+  }>;
+};
+
+export default async function BillingPage({ searchParams }: Props) {
+  const params = await searchParams;
+
+  if (params?.checkout === "success" && params.session_id) {
+    await syncCheckoutSession(params.session_id);
+  }
+
   const currentPlan = await getCurrentPlan();
 
   return (
@@ -64,6 +77,18 @@ export default async function BillingPage() {
         }`}
         icon={<Crown className="h-5 w-5" />}
       />
+
+      {params?.checkout === "success" ? (
+        <div className="mt-4 rounded-3xl bg-white p-4 text-sm font-bold text-oshica-primary shadow-sm">
+          決済が完了しました。プラン情報を更新しました。
+        </div>
+      ) : null}
+
+      {params?.checkout === "cancel" ? (
+        <div className="mt-4 rounded-3xl bg-white p-4 text-sm font-bold text-oshica-primary shadow-sm">
+          決済をキャンセルしました。
+        </div>
+      ) : null}
 
       <section className="mt-4 space-y-3">
         {plans.map((plan) => {
