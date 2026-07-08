@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { BottomNav } from "@/components/layout/BottomNav";
+import { FormSubmitGuard } from "@/components/shared/FormSubmitGuard";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -44,6 +45,8 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex min-h-full flex-col bg-oshica-bg">
+      <FormSubmitGuard />
+
       <main className="flex-1 pb-32">{children}</main>
 
       {open && (

@@ -12,11 +12,12 @@ export default function SignupPage() {
       <AuthCard title="新規登録" description="無料で Oshica をはじめましょう">
         <SignupForm />
       </AuthCard>
-      <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+
+      <p className="text-center text-sm font-bold text-oshica-primary">
         すでにアカウントをお持ちの方は{" "}
         <Link
           href={ROUTES.login}
-          className="font-medium text-rose-500 hover:text-rose-600"
+          className="font-black text-rose-500 hover:text-rose-600"
         >
           ログイン
         </Link>

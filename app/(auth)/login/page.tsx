@@ -10,9 +10,9 @@ export const metadata = { title: "ログイン" };
 function LoginFormFallback() {
   return (
     <div className="space-y-4 animate-pulse">
-      <div className="h-11 rounded-xl bg-zinc-200 dark:bg-zinc-800" />
-      <div className="h-11 rounded-xl bg-zinc-200 dark:bg-zinc-800" />
-      <div className="h-11 rounded-xl bg-rose-200 dark:bg-rose-900" />
+      <div className="h-11 rounded-xl bg-oshica-bg" />
+      <div className="h-11 rounded-xl bg-oshica-bg" />
+      <div className="h-11 rounded-xl bg-oshica-border" />
     </div>
   );
 }
@@ -25,11 +25,12 @@ export default function LoginPage() {
           <LoginForm />
         </Suspense>
       </AuthCard>
-      <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+
+      <p className="text-center text-sm font-bold text-oshica-primary">
         アカウントをお持ちでない方は{" "}
         <Link
           href={ROUTES.signup}
-          className="font-medium text-rose-500 hover:text-rose-600"
+          className="font-black text-rose-500 hover:text-rose-600"
         >
           新規登録
         </Link>
