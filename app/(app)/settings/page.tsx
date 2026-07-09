@@ -12,13 +12,13 @@ import {
 } from "lucide-react";
 
 import { MobilePage } from "@/components/layout/MobilePage";
-import { LogoutButton } from "@/features/auth/components/LogoutButton";
-import { ROUTES } from "@/lib/constants/routes";
-import { getAuthUser } from "@/lib/supabase/session";
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
+import { LogoutButton } from "@/features/auth/components/LogoutButton";
+import { ROUTES } from "@/lib/constants/routes";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { getCurrentPlan } from "@/lib/subscription";
+import { getAuthUser } from "@/lib/supabase/session";
 
 export const metadata = {
   title: "設定",
@@ -26,19 +26,64 @@ export const metadata = {
 
 const CONTACT_EMAIL = "osikanrityou@gmail.com";
 
+const settingItems = [
+  {
+    href: ROUTES.settingsAccount,
+    title: "アカウント",
+    description: "メールアドレスなど",
+    icon: User,
+  },
+  {
+    href: "/settings/home-message",
+    title: "ホームメッセージ",
+    description: "ホーム画面の文章を変更",
+    icon: Type,
+  },
+  {
+    href: "/settings/notifications",
+    title: "通知設定",
+    description: "リマインダー通知を管理",
+    icon: Bell,
+  },
+  {
+    href: "/terms",
+    title: "利用規約",
+    description: "サービス利用時のルール",
+    icon: Shield,
+  },
+  {
+    href: "/privacy",
+    title: "プライバシーポリシー",
+    description: "個人情報の取り扱い",
+    icon: Shield,
+  },
+  {
+    href: "/licenses",
+    title: "ライセンス",
+    description: "利用しているライブラリ",
+    icon: FileText,
+  },
+];
+
 export default async function SettingsPage() {
   const user = await getAuthUser();
   const currentPlan = await getCurrentPlan();
   const planLimits = PLAN_LIMITS[currentPlan];
 
   const planLabel =
-    currentPlan === "premium" ? "Premium" : currentPlan === "plus" ? "Plus" : "Free";
+    currentPlan === "premium"
+      ? "Premium"
+      : currentPlan === "plus"
+        ? "Plus"
+        : "Free";
+
   const planDescription =
     currentPlan === "premium"
       ? "登録数を気にせず推し活を管理できます"
       : currentPlan === "plus"
         ? "Freeより多く推し活を管理できます"
         : "Premiumについて見る";
+
   const limitBadgeText =
     planLimits.oshiLimit === null ? "無制限" : "上限あり";
 
@@ -66,18 +111,18 @@ export default async function SettingsPage() {
         description="アカウントや通知などを管理できます"
       />
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-5 space-y-4">
         <OshicaCard>
           <div className="flex items-center gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-oshica-bg">
-              <Mail className="h-5 w-5 text-oshica-primary" />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+              <Mail className="h-5 w-5" />
             </div>
 
             <div className="min-w-0">
               <p className="text-xs font-bold text-oshica-primary">
                 ログイン中
               </p>
-              <p className="mt-1 truncate font-bold text-oshica-text">
+              <p className="mt-1 truncate font-black text-oshica-text">
                 {user?.email ?? "—"}
               </p>
             </div>
@@ -87,19 +132,19 @@ export default async function SettingsPage() {
         <Link href="/settings/billing" className="block">
           <OshicaCard>
             <div className="flex items-center justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-bold text-oshica-primary">
                   現在のプラン
                 </p>
                 <p className="mt-1 text-xl font-black text-oshica-text">
                   {planLabel}
                 </p>
-                <p className="mt-1 text-sm text-oshica-primary">
+                <p className="mt-1 text-sm leading-6 text-oshica-primary">
                   {planDescription}
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 <span className="rounded-full bg-oshica-bg px-3 py-1 text-xs font-bold text-oshica-secondary">
                   {limitBadgeText}
                 </span>
@@ -109,144 +154,74 @@ export default async function SettingsPage() {
           </OshicaCard>
         </Link>
 
-        <div className="space-y-2">
-          <Link href={ROUTES.settingsAccount} className="block">
-            <OshicaCard>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-oshica-primary" />
-                  <div>
-                    <p className="font-bold text-oshica-text">アカウント</p>
-                    <p className="text-sm text-oshica-primary">
-                      メールアドレスなど
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-oshica-primary" />
-              </div>
-            </OshicaCard>
-          </Link>
+        <section className="space-y-2">
+          {settingItems.map((item) => {
+            const Icon = item.icon;
 
-          <Link href="/settings/home-message" className="block">
-            <OshicaCard>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Type className="h-5 w-5 text-oshica-primary" />
-                  <div>
-                    <p className="font-bold text-oshica-text">
-                      ホームメッセージ
-                    </p>
-                    <p className="text-sm text-oshica-primary">
-                      ホーム画面の文章を変更
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-oshica-primary" />
-              </div>
-            </OshicaCard>
-          </Link>
+            return (
+              <Link key={item.href} href={item.href} className="block">
+                <OshicaCard>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+                        <Icon className="h-5 w-5" />
+                      </div>
 
-          <Link href="/settings/notifications" className="block">
-            <OshicaCard>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Bell className="h-5 w-5 text-oshica-primary" />
-                  <div>
-                    <p className="font-bold text-oshica-text">通知設定</p>
-                    <p className="text-sm text-oshica-primary">
-                      リマインダー通知を管理
-                    </p>
-                  </div>
-                </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-oshica-text">
+                          {item.title}
+                        </p>
+                        <p className="mt-0.5 text-sm text-oshica-primary">
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
 
-                <ChevronRight className="h-5 w-5 text-oshica-primary" />
-              </div>
-            </OshicaCard>
-          </Link>
-
-          <Link href="/terms" className="block">
-            <OshicaCard>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-oshica-primary" />
-                  <div>
-                    <p className="font-bold text-oshica-text">利用規約</p>
-                    <p className="text-sm text-oshica-primary">
-                      サービス利用時のルール
-                    </p>
+                    <ChevronRight className="h-5 w-5 shrink-0 text-oshica-primary" />
                   </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-oshica-primary" />
-              </div>
-            </OshicaCard>
-          </Link>
-
-          <Link href="/privacy" className="block">
-            <OshicaCard>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-oshica-primary" />
-                  <div>
-                    <p className="font-bold text-oshica-text">
-                      プライバシーポリシー
-                    </p>
-                    <p className="text-sm text-oshica-primary">
-                      個人情報の取り扱い
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-oshica-primary" />
-              </div>
-            </OshicaCard>
-          </Link>
-
-          <Link href="/licenses" className="block">
-            <OshicaCard>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-oshica-primary" />
-                  <div>
-                    <p className="font-bold text-oshica-text">ライセンス</p>
-                    <p className="text-sm text-oshica-primary">
-                      利用しているライブラリ
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-oshica-primary" />
-              </div>
-            </OshicaCard>
-          </Link>
+                </OshicaCard>
+              </Link>
+            );
+          })}
 
           <a href={mailto} className="block">
             <OshicaCard>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Crown className="h-5 w-5 text-oshica-primary" />
-                  <div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+                    <Crown className="h-5 w-5" />
+                  </div>
+
+                  <div className="min-w-0">
                     <p className="font-bold text-oshica-text">お問い合わせ</p>
-                    <p className="text-sm text-oshica-primary">
+                    <p className="mt-0.5 text-sm text-oshica-primary">
                       ご意見・不具合報告
                     </p>
                   </div>
                 </div>
 
-                <ChevronRight className="h-5 w-5 text-oshica-primary" />
+                <ChevronRight className="h-5 w-5 shrink-0 text-oshica-primary" />
               </div>
             </OshicaCard>
           </a>
 
           <OshicaCard>
             <div className="flex items-center gap-3">
-              <Info className="h-5 w-5 text-oshica-primary" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+                <Info className="h-5 w-5" />
+              </div>
+
               <div>
                 <p className="font-bold text-oshica-text">Oshica</p>
-                <p className="text-sm text-oshica-primary">Version 1.0.0</p>
+                <p className="mt-0.5 text-sm text-oshica-primary">
+                  Version 1.0.0
+                </p>
               </div>
             </div>
           </OshicaCard>
-        </div>
+        </section>
 
-        <div className="pt-3">
+        <div className="pt-2">
           <LogoutButton className="w-full" />
         </div>
       </div>

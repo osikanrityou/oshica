@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Crown, Wallet } from "lucide-react";
+import { ArrowLeft, Crown, Wallet } from "lucide-react";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
@@ -34,6 +34,15 @@ export default async function NewExpensePage({ searchParams }: Props) {
 
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
+      <div className="mb-4">
+        <Link
+          href="/expenses"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-primary shadow-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      </div>
+
       <OshicaPageHeader
         label="Expense"
         title="支出登録"

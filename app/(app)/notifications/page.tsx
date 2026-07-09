@@ -1,4 +1,4 @@
-import { Bell } from "lucide-react";
+import { Bell, CheckCircle2 } from "lucide-react";
 
 import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
 import { OshicaCard } from "@/components/oshica/OshicaCard";
@@ -108,8 +108,9 @@ export default async function NotificationsPage() {
             <form action={markAllRemindersRead}>
               <button
                 type="submit"
-                className="rounded-full bg-white px-3 py-2 text-xs font-bold text-oshica-primary shadow-sm transition active:scale-95"
+                className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-xs font-bold text-oshica-primary shadow-sm transition active:scale-95"
               >
+                <CheckCircle2 className="h-3.5 w-3.5" />
                 すべて既読
               </button>
             </form>
@@ -118,48 +119,56 @@ export default async function NotificationsPage() {
 
         <div className="space-y-3">
           {reminders && reminders.length > 0 ? (
-            reminders.map((item: any) => (
-              <OshicaCard
-                key={item.id}
-                className="border-l-2 border-l-oshica-border transition-all duration-200 active:scale-[0.98]"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
-                    <Bell className="h-5 w-5" />
-                  </div>
+            reminders.map((item: any) => {
+              const isUnread = !item.is_read;
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-oshica-bg px-2 py-0.5 text-[10px] font-bold text-oshica-secondary">
-                        {reminderLabel(item.date)}
-                      </span>
-
-                      <p className="text-xs font-bold text-oshica-primary">
-                        {item.label}
-                      </p>
-
-                      {!item.is_read && (
-                        <span className="rounded-full bg-oshica-bg px-2 py-0.5 text-[10px] font-bold text-oshica-secondary">
-                          未読
-                        </span>
-                      )}
+              return (
+                <OshicaCard
+                  key={item.id}
+                  className={
+                    isUnread
+                      ? "border-l-4 border-l-oshica-primary transition-all duration-200 active:scale-[0.98]"
+                      : "border-l-2 border-l-oshica-border transition-all duration-200 active:scale-[0.98]"
+                  }
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+                      <Bell className="h-5 w-5" />
                     </div>
 
-                    <p className="mt-2 font-black text-oshica-text">
-                      {item.title}
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-oshica-bg px-2 py-0.5 text-[10px] font-bold text-oshica-secondary">
+                          {reminderLabel(item.date)}
+                        </span>
 
-                    <p className="mt-1 text-xs font-medium text-oshica-primary">
-                      {item.date}
-                    </p>
+                        <p className="text-xs font-bold text-oshica-primary">
+                          {item.label}
+                        </p>
 
-                    <p className="mt-2 text-sm font-bold text-oshica-secondary">
-                      {item.message}
-                    </p>
+                        {isUnread && (
+                          <span className="rounded-full bg-oshica-primary px-2 py-0.5 text-[10px] font-bold text-white">
+                            未読
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mt-2 font-black text-oshica-text">
+                        {item.title}
+                      </p>
+
+                      <p className="mt-1 text-xs font-medium text-oshica-primary">
+                        {item.date}
+                      </p>
+
+                      <p className="mt-2 text-sm font-bold leading-6 text-oshica-secondary">
+                        {item.message}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </OshicaCard>
-            ))
+                </OshicaCard>
+              );
+            })
           ) : (
             <OshicaEmptyState
               icon={<Bell className="h-6 w-6" />}

@@ -152,11 +152,11 @@ export default async function EditExpensePage({ params, searchParams }: Props) {
             <span className="text-sm font-bold text-oshica-text">日付</span>
 
             <input
-  type="date"
-  name="spentAt"
-  defaultValue={expense.spent_at ?? ""}
-  className="mt-2 flex h-12 w-full min-w-0 max-w-full appearance-none items-center rounded-2xl border border-oshica-border bg-white px-4 text-sm leading-none text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
-/>
+              type="date"
+              name="spentAt"
+              defaultValue={expense.spent_at ?? ""}
+              className="mt-2 flex h-12 w-full min-w-0 max-w-full appearance-none items-center rounded-2xl border border-oshica-border bg-white px-4 text-sm leading-none text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+            />
           </label>
         </OshicaCard>
 

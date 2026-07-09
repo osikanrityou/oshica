@@ -54,12 +54,19 @@ export default async function BillingPage({ searchParams }: Props) {
 
   const currentPlan = await getCurrentPlan();
 
+  const currentPlanLabel =
+    currentPlan === "premium"
+      ? "Premium"
+      : currentPlan === "plus"
+        ? "Plus"
+        : "Free";
+
   return (
-    <main className="mx-auto max-w-sm bg-oshica-bg px-5 pb-40 pt-6 text-oshica-text">
+    <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-40 pt-6 text-oshica-text">
       <div className="mb-4">
         <Link
           href="/settings"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-oshica-primary shadow-sm"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-primary shadow-sm"
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
@@ -68,13 +75,7 @@ export default async function BillingPage({ searchParams }: Props) {
       <OshicaPageHeader
         label="Plan"
         title="料金プラン"
-        description={`現在のプラン：${
-          currentPlan === "premium"
-            ? "Premium"
-            : currentPlan === "plus"
-              ? "Plus"
-              : "Free"
-        }`}
+        description={`現在のプラン：${currentPlanLabel}`}
         icon={<Crown className="h-5 w-5" />}
       />
 
@@ -105,8 +106,8 @@ export default async function BillingPage({ searchParams }: Props) {
               }
             >
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
                     <p className="text-xs font-black text-oshica-primary">
                       {plan.name}
                     </p>
@@ -134,7 +135,7 @@ export default async function BillingPage({ searchParams }: Props) {
                   </p>
                 </div>
 
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
                   {plan.key === "premium" ? (
                     <Sparkles className="h-4 w-4" />
                   ) : (
@@ -149,7 +150,7 @@ export default async function BillingPage({ searchParams }: Props) {
                     key={feature}
                     className="flex items-center gap-2 text-xs font-bold text-oshica-text"
                   >
-                    <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-oshica-bg text-oshica-primary">
                       <Check className="h-3 w-3" />
                     </span>
                     {feature}

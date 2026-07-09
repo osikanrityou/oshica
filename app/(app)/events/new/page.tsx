@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarDays, Crown } from "lucide-react";
+import { ArrowLeft, CalendarDays, Crown } from "lucide-react";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
@@ -32,6 +32,15 @@ export default async function NewEventPage({ searchParams }: Props) {
 
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
+      <div className="mb-4">
+        <Link
+          href="/events"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-primary shadow-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      </div>
+
       <OshicaPageHeader
         label="Event"
         title="イベント登録"
@@ -89,7 +98,7 @@ export default async function NewEventPage({ searchParams }: Props) {
               <select
                 name="oshiId"
                 required
-                className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 block h-12 w-full min-w-0 appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               >
                 <option value="">推しを選択</option>
                 {oshis?.map((oshi: any) => (
@@ -107,7 +116,7 @@ export default async function NewEventPage({ searchParams }: Props) {
               <input
                 name="title"
                 required
-                className="mt-2 block w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 block h-12 w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </label>
           </OshicaCard>
@@ -120,7 +129,7 @@ export default async function NewEventPage({ searchParams }: Props) {
               <input
                 type="date"
                 name="eventDate"
-                className="mt-2 block w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 flex h-12 w-full min-w-0 max-w-full appearance-none items-center rounded-2xl border border-oshica-border bg-white px-4 text-sm leading-none text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </label>
 
@@ -129,7 +138,7 @@ export default async function NewEventPage({ searchParams }: Props) {
               <input
                 type="date"
                 name="deadline"
-                className="mt-2 block w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 flex h-12 w-full min-w-0 max-w-full appearance-none items-center rounded-2xl border border-oshica-border bg-white px-4 text-sm leading-none text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </label>
           </OshicaCard>
@@ -139,7 +148,7 @@ export default async function NewEventPage({ searchParams }: Props) {
               <span className="text-sm font-bold text-oshica-text">メモ</span>
               <textarea
                 name="memo"
-                rows={5}
+                rows={4}
                 className="mt-2 block w-full min-w-0 resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </label>

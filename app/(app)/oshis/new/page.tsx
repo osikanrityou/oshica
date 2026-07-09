@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Crown, PawPrint } from "lucide-react";
+import { ArrowLeft, Crown, PawPrint } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -23,7 +23,7 @@ export default function NewOshiPage() {
   const [loading, setLoading] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<"free" | "plus" | "premium">(
-    "free"
+    "free",
   );
   const [oshiLimit, setOshiLimit] = useState<number | null>(3);
 
@@ -87,7 +87,7 @@ export default function NewOshiPage() {
       toast.error(
         currentPlan === "premium"
           ? "Premiumプランでは無制限で登録できます"
-          : `${currentPlan === "plus" ? "Plus" : "Free"}プランでは推しを${oshiLimit}人まで登録できます`
+          : `${currentPlan === "plus" ? "Plus" : "Free"}プランでは推しを${oshiLimit}人まで登録できます`,
       );
       setLoading(false);
       return;
@@ -144,6 +144,15 @@ export default function NewOshiPage() {
 
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
+      <div className="mb-4">
+        <Link
+          href="/oshis"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-primary shadow-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      </div>
+
       <OshicaPageHeader
         label="Oshi"
         title="推し登録"
@@ -196,7 +205,7 @@ export default function NewOshiPage() {
       ) : (
         <section className="mt-5 space-y-5">
           <OshicaCard className="py-5 text-center">
-            <label className="mx-auto flex h-24 w-24 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-oshica-bg text-oshica-primary shadow-sm">
+            <label className="mx-auto flex h-24 w-24 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-oshica-bg text-oshica-primary shadow-sm ring-4 ring-white">
               {previewUrl ? (
                 <img
                   src={previewUrl}
@@ -215,8 +224,11 @@ export default function NewOshiPage() {
               />
             </label>
 
-            <p className="mt-3 inline-flex rounded-full bg-oshica-bg px-4 py-2 text-xs font-bold text-oshica-primary">
-              画像を選ぶ
+            <p className="mt-3 text-sm font-black text-oshica-text">
+              推し画像
+            </p>
+            <p className="mt-1 text-xs font-bold text-oshica-primary">
+              タップして画像を選択できます
             </p>
           </OshicaCard>
 
@@ -229,7 +241,7 @@ export default function NewOshiPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="例：ギルガメッシュ"
-                className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 h-12 w-full rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </label>
 
@@ -241,7 +253,7 @@ export default function NewOshiPage() {
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="例：ゲーム・アニメ"
-                className="mt-2 w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 h-12 w-full rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </label>
           </OshicaCard>
@@ -254,7 +266,7 @@ export default function NewOshiPage() {
                 onChange={(e) => setMemo(e.target.value)}
                 rows={4}
                 placeholder="推しのメモを自由に記録"
-                className="mt-2 w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </label>
           </OshicaCard>

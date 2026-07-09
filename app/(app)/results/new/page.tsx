@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Crown, Trophy } from "lucide-react";
+import { ArrowLeft, Crown, Trophy } from "lucide-react";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
@@ -32,6 +32,15 @@ export default async function NewResultPage({ searchParams }: Props) {
 
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
+      <div className="mb-4">
+        <Link
+          href="/results"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-primary shadow-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      </div>
+
       <OshicaPageHeader
         label="Result"
         title="当落登録"
@@ -89,7 +98,7 @@ export default async function NewResultPage({ searchParams }: Props) {
               <select
                 name="oshiId"
                 required
-                className="mt-2 block w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 block h-12 w-full min-w-0 appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               >
                 <option value="">推しを選択</option>
                 {oshis?.map((oshi: any) => (
@@ -105,7 +114,7 @@ export default async function NewResultPage({ searchParams }: Props) {
               <select
                 name="result"
                 defaultValue="pending"
-                className="mt-2 block w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 block h-12 w-full min-w-0 appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               >
                 <option value="pending">未発表</option>
                 <option value="won">当選</option>
@@ -119,7 +128,7 @@ export default async function NewResultPage({ searchParams }: Props) {
               <input
                 type="date"
                 name="announcedAt"
-                className="mt-2 block w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 flex h-12 w-full min-w-0 max-w-full appearance-none items-center rounded-2xl border border-oshica-border bg-white px-4 text-sm leading-none text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </label>
           </OshicaCard>
@@ -129,7 +138,7 @@ export default async function NewResultPage({ searchParams }: Props) {
               <span className="text-sm font-bold text-oshica-text">メモ</span>
               <textarea
                 name="notes"
-                rows={5}
+                rows={4}
                 placeholder="例：ライブ先行、イベント抽選など"
                 className="mt-2 block w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />

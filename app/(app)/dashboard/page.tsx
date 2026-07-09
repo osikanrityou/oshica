@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Package,
   PawPrint,
+  Trophy,
   Wallet,
 } from "lucide-react";
 
@@ -34,6 +35,16 @@ function deadlineText(dateText: string) {
   if (days === 0) return "今日";
   if (days > 0) return `あと${days}日`;
   return `${Math.abs(days)}日前`;
+}
+
+function limitText(count: number, limit: number | null) {
+  if (limit === null) return `${count}件`;
+  return `${count}/${limit}`;
+}
+
+function limitOnlyText(limit: number | null) {
+  if (limit === null) return "無制限";
+  return `${limit}/${limit}`;
 }
 
 export default async function DashboardPage() {
@@ -90,6 +101,16 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
+  const { data: lotteryResults } = await supabase
+    .from("lottery_results")
+    .select("id, oshi_id")
+    .eq("user_id", user.id);
+
+  const { data: expenses } = await supabase
+    .from("expenses")
+    .select("id, amount, oshi_id, spent_at")
+    .eq("user_id", user.id);
+
   const now = new Date();
 
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -100,18 +121,23 @@ export default async function DashboardPage() {
     .toISOString()
     .slice(0, 10);
 
-  const { data: monthlyExpenses } = await supabase
-    .from("expenses")
-    .select("amount, oshi_id")
-    .eq("user_id", user.id)
-    .gte("spent_at", monthStart)
-    .lte("spent_at", monthEnd);
+  const monthlyExpenses =
+    expenses?.filter((item: any) => {
+      const spentAt = item.spent_at;
+      return spentAt && spentAt >= monthStart && spentAt <= monthEnd;
+    }) ?? [];
 
   const monthlyExpenseTotal =
-    monthlyExpenses?.reduce((sum: number, item: any) => sum + item.amount, 0) ??
-    0;
+    monthlyExpenses.reduce(
+      (sum: number, item: any) => sum + item.amount,
+      0,
+    ) ?? 0;
 
   const nearestSchedule = schedules?.[0];
+  const nearestScheduleOshi = nearestSchedule
+    ? oshis?.find((oshi: any) => oshi.id === nearestSchedule.oshi_id)
+    : null;
+
   const latestGoods = goods?.slice(0, 3) ?? [];
 
   return (
@@ -160,25 +186,29 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mt-5 grid grid-cols-3 gap-3">
-        <Link href="/calendar" className="rounded-3xl bg-white p-4 shadow-sm">
+        <Link href="/calendar" className="rounded-3xl bg-white p-3.5 shadow-sm">
           <CalendarDays className="h-5 w-5 text-oshica-primary" />
-          <p className="mt-2 text-xs font-bold text-oshica-primary">予定</p>
+          <p className="mt-1.5 text-xs font-bold text-oshica-primary">予定</p>
           <p className="mt-1 text-xl font-black text-oshica-text">
             {schedules?.length ?? 0}件
           </p>
         </Link>
 
-        <Link href="/expenses" className="rounded-3xl bg-white p-4 shadow-sm">
+        <Link href="/expenses" className="rounded-3xl bg-white p-3.5 shadow-sm">
           <Wallet className="h-5 w-5 text-oshica-primary" />
-          <p className="mt-2 text-xs font-bold text-oshica-primary">今月</p>
+          <p className="mt-1.5 text-xs font-bold text-oshica-primary">
+            今月の支出
+          </p>
           <p className="mt-1 text-lg font-black text-oshica-text">
             ¥{monthlyExpenseTotal.toLocaleString()}
           </p>
         </Link>
 
-        <Link href="/goods" className="rounded-3xl bg-white p-4 shadow-sm">
+        <Link href="/goods" className="rounded-3xl bg-white p-3.5 shadow-sm">
           <Package className="h-5 w-5 text-oshica-primary" />
-          <p className="mt-2 text-xs font-bold text-oshica-primary">グッズ</p>
+          <p className="mt-1.5 text-xs font-bold text-oshica-primary">
+            グッズ
+          </p>
           <p className="mt-1 text-xl font-black text-oshica-text">
             {goods?.length ?? 0}件
           </p>
@@ -204,35 +234,44 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+        <div className="mt-4 grid grid-cols-4 gap-2 text-center">
           <div className="rounded-2xl bg-oshica-bg px-2 py-3">
-            <p className="text-[10px] font-bold text-oshica-primary">
+            <CalendarDays className="mx-auto h-4 w-4 text-oshica-primary" />
+            <p className="mt-1 text-[10px] font-bold text-oshica-primary">
               イベント
             </p>
             <p className="mt-1 text-sm font-black text-oshica-text">
-              {planLimits.itemLimit === null
-                ? "無制限"
-                : `${planLimits.itemLimit}件`}
+              {limitOnlyText(planLimits.itemLimit)}
             </p>
           </div>
 
           <div className="rounded-2xl bg-oshica-bg px-2 py-3">
-            <p className="text-[10px] font-bold text-oshica-primary">
+            <Package className="mx-auto h-4 w-4 text-oshica-primary" />
+            <p className="mt-1 text-[10px] font-bold text-oshica-primary">
               グッズ
             </p>
             <p className="mt-1 text-sm font-black text-oshica-text">
-              {planLimits.itemLimit === null
-                ? "無制限"
-                : `${planLimits.itemLimit}件`}
+              {limitOnlyText(planLimits.itemLimit)}
             </p>
           </div>
 
           <div className="rounded-2xl bg-oshica-bg px-2 py-3">
-            <p className="text-[10px] font-bold text-oshica-primary">支出</p>
+            <Trophy className="mx-auto h-4 w-4 text-oshica-primary" />
+            <p className="mt-1 text-[10px] font-bold text-oshica-primary">
+              当落
+            </p>
             <p className="mt-1 text-sm font-black text-oshica-text">
-              {planLimits.itemLimit === null
-                ? "無制限"
-                : `${planLimits.itemLimit}件`}
+              {limitOnlyText(planLimits.itemLimit)}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-oshica-bg px-2 py-3">
+            <Wallet className="mx-auto h-4 w-4 text-oshica-primary" />
+            <p className="mt-1 text-[10px] font-bold text-oshica-primary">
+              支出
+            </p>
+            <p className="mt-1 text-sm font-black text-oshica-text">
+              {limitOnlyText(planLimits.itemLimit)}
             </p>
           </div>
         </div>
@@ -255,11 +294,12 @@ export default async function DashboardPage() {
             className="block rounded-[2rem] bg-oshica-secondary p-5 text-white shadow-sm"
           >
             <div className="flex items-start justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-bold text-oshica-border">
                   {nearestSchedule.label}
+                  {nearestScheduleOshi ? ` / ${nearestScheduleOshi.name}` : ""}
                 </p>
-                <p className="mt-2 text-lg font-black">
+                <p className="mt-2 truncate text-lg font-black">
                   {nearestSchedule.title}
                 </p>
                 <p className="mt-1 text-sm text-oshica-bg">
@@ -306,11 +346,13 @@ export default async function DashboardPage() {
                 goods?.filter((item: any) => item.oshi_id === oshi.id)
                   .length ?? 0;
 
-              const oshiExpense =
-                monthlyExpenses
-                  ?.filter((item: any) => item.oshi_id === oshi.id)
-                  .reduce((sum: number, item: any) => sum + item.amount, 0) ??
-                0;
+              const oshiResults =
+                lotteryResults?.filter((item: any) => item.oshi_id === oshi.id)
+                  .length ?? 0;
+
+              const oshiExpenses =
+                expenses?.filter((item: any) => item.oshi_id === oshi.id)
+                  .length ?? 0;
 
               const nextOshiSchedule = schedules?.find(
                 (item: any) => item.oshi_id === oshi.id,
@@ -349,18 +391,19 @@ export default async function DashboardPage() {
 
                         <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-oshica-primary">
                           <span>
-                            予定 {oshiEvents}
-                            {planLimits.itemLimit === null
-                              ? "件"
-                              : `/${planLimits.itemLimit}`}
+                            イベント{" "}
+                            {limitText(oshiEvents, planLimits.itemLimit)}
                           </span>
                           <span>
-                            グッズ {oshiGoods}
-                            {planLimits.itemLimit === null
-                              ? "件"
-                              : `/${planLimits.itemLimit}`}
+                            グッズ {limitText(oshiGoods, planLimits.itemLimit)}
                           </span>
-                          <span>¥{oshiExpense.toLocaleString()}</span>
+                          <span>
+                            当落 {limitText(oshiResults, planLimits.itemLimit)}
+                          </span>
+                          <span>
+                            支出{" "}
+                            {limitText(oshiExpenses, planLimits.itemLimit)}
+                          </span>
                         </div>
                       </div>
 
@@ -422,16 +465,27 @@ export default async function DashboardPage() {
                 href={`/goods/${item.id}/edit`}
                 className="flex items-center justify-between rounded-3xl bg-white p-4 shadow-sm"
               >
-                <div>
-                  <p className="font-bold text-oshica-text">{item.name}</p>
+                <div className="min-w-0">
+                  <p className="truncate font-bold text-oshica-text">
+                    {item.name}
+                  </p>
                   <p className="mt-1 text-xs text-oshica-primary">
                     {item.price
                       ? `¥${Number(item.price).toLocaleString("ja-JP")}`
                       : "金額未設定"}
                   </p>
+                  {item.deadline ? (
+                    <p className="mt-1 text-xs text-oshica-primary">
+                      締切：{item.deadline}
+                    </p>
+                  ) : item.release_date ? (
+                    <p className="mt-1 text-xs text-oshica-primary">
+                      発売日：{item.release_date}
+                    </p>
+                  ) : null}
                 </div>
 
-                <ChevronRight className="h-5 w-5 text-oshica-primary" />
+                <ChevronRight className="h-5 w-5 shrink-0 text-oshica-primary" />
               </Link>
             ))
           ) : (
