@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   CalendarDays,
+  ChevronLeft,
   ChevronRight,
   Clock,
 } from "lucide-react";
@@ -18,6 +19,12 @@ export const metadata = {
   title: "イベント一覧",
 };
 
+type Props = {
+  searchParams?: Promise<{
+    oshiId?: string;
+  }>;
+};
+
 function getDaysLeft(dateText: string) {
   const today = new Date();
   const target = new Date(dateText);
@@ -26,7 +33,7 @@ function getDaysLeft(dateText: string) {
   target.setHours(0, 0, 0, 0);
 
   return Math.ceil(
-    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
   );
 }
 
@@ -38,7 +45,10 @@ function daysLabel(dateText: string) {
   return `${Math.abs(days)}日前`;
 }
 
-export default async function EventsPage() {
+export default async function EventsPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const oshiId = params?.oshiId;
+
   const supabase = (await createClient()) as any;
 
   const {
@@ -47,11 +57,26 @@ export default async function EventsPage() {
 
   if (!user) return null;
 
-  const { data: events } = await supabase
+  const { data: selectedOshi } = oshiId
+    ? await supabase
+        .from("oshis")
+        .select("id, name")
+        .eq("id", oshiId)
+        .eq("user_id", user.id)
+        .single()
+    : { data: null };
+
+  let eventsQuery = supabase
     .from("events")
     .select("id, title, event_date, deadline, memo, oshi_id")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  if (oshiId) {
+    eventsQuery = eventsQuery.eq("oshi_id", oshiId);
+  }
+
+  const { data: events } = await eventsQuery;
 
   const upcomingCount =
     events?.filter((item: any) => {
@@ -59,11 +84,28 @@ export default async function EventsPage() {
       return item.event_date >= new Date().toISOString().slice(0, 10);
     }).length ?? 0;
 
+  const pageTitle = selectedOshi
+    ? `${selectedOshi.name}のイベント`
+    : "イベント一覧";
+
+  const pageDescription = selectedOshi
+    ? "この推しに登録したイベントだけを表示しています"
+    : "応募・開催日・締切をまとめて確認できます";
+
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <SidebarMenuButton />
+          {selectedOshi ? (
+            <Link
+              href={`/oshis/${selectedOshi.id}`}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-secondary shadow-sm"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+          ) : (
+            <SidebarMenuButton />
+          )}
 
           <p className="text-base font-black tracking-wide text-oshica-secondary">
             Oshica
@@ -75,14 +117,26 @@ export default async function EventsPage() {
 
       <OshicaPageHeader
         label="Event"
-        title="イベント一覧"
-        description="応募・開催日・締切をまとめて確認できます"
+        title={pageTitle}
+        description={pageDescription}
         icon={<CalendarDays className="h-5 w-5" />}
       />
 
+      {selectedOshi ? (
+        <Link
+          href={`/oshis/${selectedOshi.id}`}
+          className="mt-4 inline-flex items-center gap-1 rounded-full bg-white px-4 py-2 text-xs font-bold text-oshica-primary shadow-sm"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+          推し詳細へ戻る
+        </Link>
+      ) : null}
+
       <section className="mt-6 grid grid-cols-2 gap-3">
         <OshicaCard>
-          <p className="text-xs font-bold text-oshica-primary">登録イベント</p>
+          <p className="text-xs font-bold text-oshica-primary">
+            登録イベント
+          </p>
           <p className="mt-2 text-2xl font-black text-oshica-text">
             {events?.length ?? 0}件
           </p>
@@ -98,7 +152,7 @@ export default async function EventsPage() {
 
       <section className="mt-8 pb-10">
         <OshicaSectionHeader
-          title="登録したイベント"
+          title={selectedOshi ? "この推しのイベント" : "登録したイベント"}
           href="/events/new"
           actionLabel="追加する ›"
         />
@@ -178,7 +232,11 @@ export default async function EventsPage() {
           ) : (
             <OshicaEmptyState
               icon={<CalendarDays className="h-6 w-6" />}
-              title="まだイベントがありません"
+              title={
+                selectedOshi
+                  ? "この推しのイベントはまだありません"
+                  : "まだイベントがありません"
+              }
               description="イベント予定を追加しましょう"
               href="/events/new"
               actionLabel="イベントを登録"

@@ -1,4 +1,5 @@
-import { Wallet } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, Wallet } from "lucide-react";
 
 import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
 import { OshicaCard } from "@/components/oshica/OshicaCard";
@@ -12,7 +13,16 @@ import {
 
 export const metadata = { title: "支出" };
 
-export default async function ExpensesPage() {
+type Props = {
+  searchParams?: Promise<{
+    oshiId?: string;
+  }>;
+};
+
+export default async function ExpensesPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const oshiId = params?.oshiId;
+
   const supabase = await createClient();
 
   const {
@@ -20,11 +30,27 @@ export default async function ExpensesPage() {
   } = await supabase.auth.getUser();
 
   let items: ExpenseWithOshi[] = [];
+  let selectedOshi: { id: string; name: string } | null = null;
 
   if (user) {
+    if (oshiId) {
+      const { data } = await supabase
+        .from("oshis")
+        .select("id, name")
+        .eq("id", oshiId)
+        .eq("user_id", user.id)
+        .single();
+
+      selectedOshi = data;
+    }
+
     try {
       const repo = new ExpenseRepository(supabase);
-      items = await repo.listByUser(user.id);
+      const allItems = await repo.listByUser(user.id);
+
+      items = oshiId
+        ? allItems.filter((item) => item.oshi_id === oshiId)
+        : allItems;
     } catch {
       items = [];
     }
@@ -45,7 +71,16 @@ export default async function ExpensesPage() {
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <SidebarMenuButton />
+          {selectedOshi ? (
+            <Link
+              href={`/oshis/${selectedOshi.id}`}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-secondary shadow-sm"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+          ) : (
+            <SidebarMenuButton />
+          )}
 
           <p className="text-base font-black tracking-wide text-oshica-secondary">
             Oshica
@@ -57,16 +92,31 @@ export default async function ExpensesPage() {
 
       <OshicaPageHeader
         label="Expenses"
-        title="支出"
-        description="どの推しに使った金額か、まとめて確認できます"
+        title={selectedOshi ? `${selectedOshi.name}の支出` : "支出"}
+        description={
+          selectedOshi
+            ? "この推しに登録した支出だけを表示しています"
+            : "どの推しに使った金額か、まとめて確認できます"
+        }
         icon={<Wallet className="h-5 w-5" />}
         actionHref="/expenses/new"
         actionLabel="追加する ›"
       />
 
+      {selectedOshi ? (
+        <Link
+          href={`/oshis/${selectedOshi.id}`}
+          className="mt-4 inline-flex items-center gap-1 rounded-full bg-white px-4 py-2 text-xs font-bold text-oshica-primary shadow-sm"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+          推し詳細へ戻る
+        </Link>
+      ) : null}
+
       <section className="mt-6 grid grid-cols-2 gap-3">
         <OshicaCard>
           <p className="text-xs font-bold text-oshica-primary">合計支出</p>
+
           <p className="mt-2 text-xl font-black text-oshica-text">
             ¥{total.toLocaleString("ja-JP")}
           </p>
@@ -74,6 +124,7 @@ export default async function ExpensesPage() {
 
         <OshicaCard>
           <p className="text-xs font-bold text-oshica-primary">今月</p>
+
           <p className="mt-2 text-xl font-black text-oshica-text">
             ¥{monthTotal.toLocaleString("ja-JP")}
           </p>
@@ -82,7 +133,10 @@ export default async function ExpensesPage() {
 
       <section className="mt-8">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-black text-oshica-text">支出履歴</h2>
+          <h2 className="text-sm font-black text-oshica-text">
+            {selectedOshi ? "この推しの支出" : "支出履歴"}
+          </h2>
+
           <p className="text-xs font-bold text-oshica-primary">
             {items.length}件
           </p>

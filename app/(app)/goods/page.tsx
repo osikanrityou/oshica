@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
+  ChevronLeft,
   ChevronRight,
   Package,
   ShoppingBag,
@@ -15,6 +16,12 @@ import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { OshicaSectionHeader } from "@/components/oshica/OshicaSectionHeader";
 import { OshicaEmptyState } from "@/components/oshica/OshicaEmptyState";
 
+type Props = {
+  searchParams?: Promise<{
+    oshiId?: string;
+  }>;
+};
+
 function getDaysLeft(dateText: string) {
   const today = new Date();
   const target = new Date(dateText);
@@ -23,7 +30,7 @@ function getDaysLeft(dateText: string) {
   target.setHours(0, 0, 0, 0);
 
   return Math.ceil(
-    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
   );
 }
 
@@ -35,7 +42,10 @@ function dateLabel(dateText: string) {
   return `${Math.abs(days)}日前`;
 }
 
-export default async function GoodsPage() {
+export default async function GoodsPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const oshiId = params?.oshiId;
+
   const supabase = (await createClient()) as any;
 
   const {
@@ -46,17 +56,47 @@ export default async function GoodsPage() {
     redirect("/login");
   }
 
-  const { data: goods } = await supabase
+  const { data: selectedOshi } = oshiId
+    ? await supabase
+        .from("oshis")
+        .select("id, name")
+        .eq("id", oshiId)
+        .eq("user_id", user.id)
+        .single()
+    : { data: null };
+
+  let goodsQuery = supabase
     .from("goods")
     .select("*")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
+  if (oshiId) {
+    goodsQuery = goodsQuery.eq("oshi_id", oshiId);
+  }
+
+  const { data: goods } = await goodsQuery;
+
+  const pageTitle = selectedOshi ? `${selectedOshi.name}のグッズ` : "グッズ一覧";
+
+  const pageDescription = selectedOshi
+    ? "この推しに登録したグッズだけを表示しています"
+    : "予約・発売日・締切をまとめて管理できます";
+
   return (
     <main className="mx-auto max-w-md bg-[#E9F0FF] px-5 pb-32 pt-8 text-[#001117]">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <SidebarMenuButton />
+          {selectedOshi ? (
+            <Link
+              href={`/oshis/${selectedOshi.id}`}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-secondary shadow-sm"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+          ) : (
+            <SidebarMenuButton />
+          )}
 
           <p className="text-base font-black tracking-wide text-oshica-secondary">
             Oshica
@@ -68,10 +108,20 @@ export default async function GoodsPage() {
 
       <OshicaPageHeader
         label="Goods"
-        title="グッズ一覧"
-        description="予約・発売日・締切をまとめて管理できます"
+        title={pageTitle}
+        description={pageDescription}
         icon={<ShoppingBag className="h-5 w-5" />}
       />
+
+      {selectedOshi ? (
+        <Link
+          href={`/oshis/${selectedOshi.id}`}
+          className="mt-4 inline-flex items-center gap-1 rounded-full bg-white px-4 py-2 text-xs font-bold text-oshica-primary shadow-sm"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+          推し詳細へ戻る
+        </Link>
+      ) : null}
 
       <section className="mt-6 grid grid-cols-2 gap-3">
         <OshicaCard>
@@ -93,7 +143,7 @@ export default async function GoodsPage() {
 
       <section className="mt-6">
         <OshicaSectionHeader
-          title="登録したグッズ"
+          title={selectedOshi ? "この推しのグッズ" : "登録したグッズ"}
           href="/goods/new"
           actionLabel="追加する ›"
         />
@@ -168,7 +218,11 @@ export default async function GoodsPage() {
           ) : (
             <OshicaEmptyState
               icon={<Package className="h-6 w-6" />}
-              title="まだグッズがありません"
+              title={
+                selectedOshi
+                  ? "この推しのグッズはまだありません"
+                  : "まだグッズがありません"
+              }
               description="予約したグッズを登録しましょう"
               href="/goods/new"
               actionLabel="グッズを登録"

@@ -1,4 +1,5 @@
-import { Trophy } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, Trophy } from "lucide-react";
 
 import { MobilePage } from "@/components/layout/MobilePage";
 import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
@@ -11,7 +12,16 @@ export const metadata = {
   title: "当落",
 };
 
-export default async function ResultsPage() {
+type Props = {
+  searchParams?: Promise<{
+    oshiId?: string;
+  }>;
+};
+
+export default async function ResultsPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const oshiId = params?.oshiId;
+
   const supabase = await createClient();
 
   const {
@@ -19,11 +29,27 @@ export default async function ResultsPage() {
   } = await supabase.auth.getUser();
 
   let items: Awaited<ReturnType<LotteryRepository["listByUser"]>> = [];
+  let selectedOshi: { id: string; name: string } | null = null;
 
   if (user) {
+    if (oshiId) {
+      const { data } = await supabase
+        .from("oshis")
+        .select("id, name")
+        .eq("id", oshiId)
+        .eq("user_id", user.id)
+        .single();
+
+      selectedOshi = data;
+    }
+
     try {
       const repo = new LotteryRepository(supabase);
-      items = await repo.listByUser(user.id);
+      const allItems = await repo.listByUser(user.id);
+
+      items = oshiId
+        ? allItems.filter((item: any) => item.oshi_id === oshiId)
+        : allItems;
     } catch {
       items = [];
     }
@@ -33,7 +59,16 @@ export default async function ResultsPage() {
     <MobilePage className="bg-oshica-bg pb-32">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <SidebarMenuButton />
+          {selectedOshi ? (
+            <Link
+              href={`/oshis/${selectedOshi.id}`}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-oshica-secondary shadow-sm"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+          ) : (
+            <SidebarMenuButton />
+          )}
 
           <p className="text-base font-black tracking-wide text-oshica-secondary">
             Oshica
@@ -45,12 +80,26 @@ export default async function ResultsPage() {
 
       <OshicaPageHeader
         label="Lottery"
-        title="当落"
-        description="応募したイベントの結果を記録できます"
+        title={selectedOshi ? `${selectedOshi.name}の当落` : "当落"}
+        description={
+          selectedOshi
+            ? "この推しに登録した当落だけを表示しています"
+            : "応募したイベントの結果を記録できます"
+        }
         icon={<Trophy className="h-5 w-5" />}
         actionHref="/results/new"
         actionLabel="追加する ›"
       />
+
+      {selectedOshi ? (
+        <Link
+          href={`/oshis/${selectedOshi.id}`}
+          className="mt-4 inline-flex items-center gap-1 rounded-full bg-white px-4 py-2 text-xs font-bold text-oshica-primary shadow-sm"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+          推し詳細へ戻る
+        </Link>
+      ) : null}
 
       <section className="mt-6">
         <LotteryResultList items={items} />

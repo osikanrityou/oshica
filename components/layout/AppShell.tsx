@@ -22,14 +22,14 @@ export function AppShell({ children }: AppShellProps) {
 
   const menuItems = [
     {
-      href: "/goods/new",
-      label: "グッズ",
-      icon: Package,
-    },
-    {
       href: "/events/new",
       label: "イベント",
       icon: CalendarDays,
+    },
+    {
+      href: "/goods/new",
+      label: "グッズ",
+      icon: Package,
     },
     {
       href: "/results/new",

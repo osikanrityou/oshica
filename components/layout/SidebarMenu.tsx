@@ -9,6 +9,8 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { getCurrentPlan } from "@/lib/subscription";
+
 const menuItems = [
   { label: "ホーム", href: "/dashboard", icon: Home },
   { label: "推し一覧", href: "/oshis", icon: Users },
@@ -19,7 +21,23 @@ const menuItems = [
   { label: "設定", href: "/settings", icon: Settings },
 ];
 
-export function SidebarMenuButton() {
+export async function SidebarMenuButton() {
+  const currentPlan = await getCurrentPlan();
+
+  const planLabel =
+    currentPlan === "premium"
+      ? "Premium"
+      : currentPlan === "plus"
+        ? "Plus"
+        : "Free";
+
+  const planDescription =
+    currentPlan === "premium"
+      ? "無制限で利用できます"
+      : currentPlan === "plus"
+        ? "推し5人・各機能5件まで"
+        : "推し3人・各機能3件まで";
+
   return (
     <details className="relative">
       <summary className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full bg-white text-xl text-oshica-secondary shadow-sm">
@@ -50,12 +68,16 @@ export function SidebarMenuButton() {
           })}
         </div>
 
-        <div className="mt-3 rounded-2xl bg-oshica-bg p-3">
-          <p className="text-xs font-black text-oshica-secondary">Premium</p>
-          <p className="mt-1 text-xs font-bold text-oshica-primary">
-            Coming Soon
-          </p>
-        </div>
+        <Link href="/settings/billing" className="mt-3 block">
+          <div className="rounded-2xl bg-oshica-bg p-3">
+            <p className="text-xs font-black text-oshica-secondary">
+              {planLabel}
+            </p>
+            <p className="mt-1 text-xs font-bold text-oshica-primary">
+              {planDescription}
+            </p>
+          </div>
+        </Link>
       </div>
     </details>
   );

@@ -2,22 +2,26 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   Bell,
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Package,
+  CircleCheck,
+  CircleDashed,
+  CircleX,
   PawPrint,
   Pencil,
+  Trophy,
   Wallet,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { PLAN_LIMITS } from "@/lib/plans";
+import { getCurrentPlan } from "@/lib/subscription";
+import { OshiActivitySummary } from "./components/OshiActivitySummary";
+import { OshiPreviewSection } from "./components/OshiPreviewSection";
 
 type Props = {
   params: Promise<{ id: string }>;
 };
-
-const FREE_PER_OSHI_LIMIT = 3;
 
 function getDaysLeft(dateText: string) {
   const today = new Date();
@@ -27,7 +31,7 @@ function getDaysLeft(dateText: string) {
   target.setHours(0, 0, 0, 0);
 
   return Math.ceil(
-    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
   );
 }
 
@@ -39,6 +43,25 @@ function daysLabel(dateText: string) {
   return `${Math.abs(days)}日前`;
 }
 
+function resultLabel(result: string | null) {
+  if (result === "won") return "当選";
+  if (result === "lost") return "落選";
+  if (result === "cancelled") return "キャンセル";
+  return "未発表";
+}
+
+function resultClassName(result: string | null) {
+  if (result === "won") return "bg-green-100 text-green-700";
+  if (result === "lost") return "bg-red-100 text-red-700";
+  return "bg-oshica-bg text-oshica-secondary";
+}
+
+function ResultIcon({ result }: { result: string | null }) {
+  if (result === "won") return <CircleCheck className="h-3.5 w-3.5" />;
+  if (result === "lost") return <CircleX className="h-3.5 w-3.5" />;
+  return <CircleDashed className="h-3.5 w-3.5" />;
+}
+
 export default async function OshiDetailPage({ params }: Props) {
   const { id } = await params;
   const supabase = (await createClient()) as any;
@@ -48,6 +71,9 @@ export default async function OshiDetailPage({ params }: Props) {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  const currentPlan = await getCurrentPlan();
+  const planLimits = PLAN_LIMITS[currentPlan];
 
   const { data: oshi } = await supabase
     .from("oshis")
@@ -72,26 +98,45 @@ export default async function OshiDetailPage({ params }: Props) {
     .eq("oshi_id", id)
     .order("event_date", { ascending: true });
 
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .slice(0, 10);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    .toISOString()
-    .slice(0, 10);
+  const { data: lotteryResults } = await supabase
+    .from("lottery_results")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("oshi_id", id)
+    .order("created_at", { ascending: false });
 
   const { data: expenses } = await supabase
     .from("expenses")
     .select("*")
     .eq("user_id", user.id)
     .eq("oshi_id", id)
-    .gte("spent_at", monthStart)
-    .lte("spent_at", monthEnd)
     .order("spent_at", { ascending: false });
 
-  const goodsCount = goods?.length ?? 0;
+  const now = new Date();
+
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    .toISOString()
+    .slice(0, 10);
+
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    .toISOString()
+    .slice(0, 10);
+
+  const monthlyExpenses =
+    expenses?.filter((item: any) => {
+      const spentAt = item.spent_at;
+      return spentAt && spentAt >= monthStart && spentAt <= monthEnd;
+    }) ?? [];
+
   const eventCount = events?.length ?? 0;
+  const goodsCount = goods?.length ?? 0;
+  const resultCount = lotteryResults?.length ?? 0;
   const expenseCount = expenses?.length ?? 0;
+
+  const monthlyExpenseTotal = monthlyExpenses.reduce(
+    (sum: number, item: any) => sum + item.amount,
+    0,
+  );
 
   const expenseTotal =
     expenses?.reduce((sum: number, item: any) => sum + item.amount, 0) ?? 0;
@@ -122,6 +167,11 @@ export default async function OshiDetailPage({ params }: Props) {
 
   const nearestSchedule = schedules[0];
 
+  const latestEvents = events?.slice(0, 2) ?? [];
+  const latestGoods = goods?.slice(0, 2) ?? [];
+  const latestResults = lotteryResults?.slice(0, 2) ?? [];
+  const latestExpenses = expenses?.slice(0, 2) ?? [];
+
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
       <header className="flex items-center justify-between">
@@ -144,93 +194,95 @@ export default async function OshiDetailPage({ params }: Props) {
         </Link>
       </header>
 
-      <section className="mt-7 rounded-[2rem] bg-white p-6 text-center shadow-sm">
-        <div className="mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-oshica-bg shadow-sm ring-4 ring-white">
-          {oshi.image_url ? (
-            <img
-              src={oshi.image_url}
-              alt={oshi.name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <PawPrint className="h-12 w-12 text-oshica-primary" />
-          )}
-        </div>
-
-        <h1 className="mt-5 text-2xl font-black text-oshica-text">
-          {oshi.name}
-        </h1>
-
-        <div className="mt-3 flex justify-center">
-          <span className="rounded-full bg-oshica-bg px-4 py-1 text-xs font-bold text-oshica-primary">
-            {oshi.category ?? "ジャンル未設定"}
-          </span>
-        </div>
-
-        {oshi.memo && (
-          <p className="mt-4 text-sm leading-relaxed text-oshica-primary">
-            {oshi.memo}
-          </p>
-        )}
-
-        <Link
-          href={`/oshis/${oshi.id}/edit`}
-          className="mt-4 inline-flex items-center gap-1 rounded-full bg-oshica-bg px-3 py-1.5 text-xs font-bold text-oshica-primary"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          編集
-        </Link>
-      </section>
-
-      <section className="mt-5 grid grid-cols-3 gap-3">
-        <div className="rounded-3xl border border-oshica-border bg-white p-4 text-center shadow-sm">
-          <CalendarDays className="mx-auto h-4 w-4 text-oshica-primary" />
-          <p className="mt-1 text-xs font-bold text-oshica-primary">予定</p>
-          <p className="mt-2 text-lg font-black text-oshica-text">
-            {eventCount}/{FREE_PER_OSHI_LIMIT}
-          </p>
-        </div>
-
-        <div className="rounded-3xl border border-oshica-border bg-white p-4 text-center shadow-sm">
-          <Package className="mx-auto h-4 w-4 text-oshica-primary" />
-          <p className="mt-1 text-xs font-bold text-oshica-primary">グッズ</p>
-          <p className="mt-2 text-lg font-black text-oshica-text">
-            {goodsCount}/{FREE_PER_OSHI_LIMIT}
-          </p>
-        </div>
-
-        <div className="rounded-3xl border border-oshica-border bg-white p-4 text-center shadow-sm">
-          <Wallet className="mx-auto h-4 w-4 text-oshica-primary" />
-          <p className="mt-1 text-xs font-bold text-oshica-primary">支出</p>
-          <p className="mt-2 text-lg font-black text-oshica-text">
-            {expenseCount}/{FREE_PER_OSHI_LIMIT}
-          </p>
-        </div>
-      </section>
-
       <section className="mt-5 rounded-[2rem] bg-white p-5 shadow-sm">
-        <p className="text-xs font-black text-oshica-primary">今月の支出</p>
-        <p className="mt-2 text-2xl font-black text-oshica-text">
-          ¥{expenseTotal.toLocaleString()}
-        </p>
+        <div className="flex items-center gap-4">
+          <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-oshica-bg shadow-sm ring-4 ring-white">
+            {oshi.image_url ? (
+              <img
+                src={oshi.image_url}
+                alt={oshi.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <PawPrint className="h-11 w-11 text-oshica-primary" />
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-black text-oshica-primary">Oshi</p>
+
+            <h1 className="mt-1 truncate text-2xl font-black text-oshica-text">
+              {oshi.name}
+            </h1>
+
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-oshica-bg px-3 py-1 text-xs font-bold text-oshica-primary">
+                {oshi.category ?? "ジャンル未設定"}
+              </span>
+
+              <Link
+                href={`/oshis/${oshi.id}/edit`}
+                className="inline-flex items-center gap-1 rounded-full bg-oshica-bg px-3 py-1 text-xs font-bold text-oshica-primary"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                編集
+              </Link>
+            </div>
+
+            {oshi.memo && (
+              <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-oshica-primary">
+                {oshi.memo}
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <OshiActivitySummary
+        oshiId={oshi.id}
+        eventCount={eventCount}
+        goodsCount={goodsCount}
+        resultCount={resultCount}
+        expenseCount={expenseCount}
+        itemLimit={planLimits.itemLimit}
+      />
+
+      <section className="mt-4 rounded-[1.75rem] bg-white p-4 shadow-sm">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs font-black text-oshica-primary">
+              今月の支出
+            </p>
+            <p className="mt-1 text-xl font-black text-oshica-text">
+              ¥{monthlyExpenseTotal.toLocaleString()}
+            </p>
+          </div>
+
+          <div className="border-l border-oshica-border pl-4">
+            <p className="text-xs font-black text-oshica-primary">合計支出</p>
+            <p className="mt-1 text-xl font-black text-oshica-text">
+              ¥{expenseTotal.toLocaleString()}
+            </p>
+          </div>
+        </div>
       </section>
 
       {nearestSchedule && (
-        <section className="mt-7">
+        <section className="mt-6">
           <h2 className="mb-3 text-sm font-black text-oshica-text">
             次の予定
           </h2>
 
           <Link
             href={nearestSchedule.href}
-            className="block rounded-[2rem] bg-oshica-secondary p-5 text-white shadow-sm"
+            className="block rounded-[1.75rem] bg-oshica-secondary p-4 text-white shadow-sm"
           >
             <div className="flex items-start justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-bold text-oshica-border">
                   {nearestSchedule.type}
                 </p>
-                <p className="mt-2 text-lg font-black">
+                <p className="mt-2 truncate text-base font-black">
                   {nearestSchedule.title}
                 </p>
                 <p className="mt-1 text-sm text-oshica-bg">
@@ -246,106 +298,169 @@ export default async function OshiDetailPage({ params }: Props) {
         </section>
       )}
 
-      <section className="mt-8">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-black text-oshica-text">イベント</h2>
-          <Link
-            href="/events/new"
-            className="text-xs font-bold text-oshica-primary"
-          >
-            追加する ›
-          </Link>
+      <section className="mt-6">
+        <div className="mb-1">
+          <h2 className="text-sm font-black text-oshica-text">活動履歴</h2>
         </div>
+      </section>
 
-        <div className="space-y-3">
-          {events && events.length > 0 ? (
-            events.map((item: any) => (
-              <Link
-                key={item.id}
-                href={`/events/${item.id}/edit`}
-                className="flex items-center justify-between rounded-3xl border border-oshica-border bg-white p-4 shadow-sm"
-              >
-                <div>
-                  <p className="font-bold text-oshica-text">{item.title}</p>
+      <OshiPreviewSection
+        title="イベント"
+        listHref="/events"
+        emptyTitle="イベントを登録しましょう"
+        emptyDescription="右下の＋から追加できます"
+        hasItems={latestEvents.length > 0}
+      >
+        {latestEvents.map((item: any) => (
+          <Link
+            key={item.id}
+            href={`/events/${item.id}/edit`}
+            className="flex items-center justify-between rounded-3xl border border-oshica-border bg-white p-4 shadow-sm"
+          >
+            <div className="min-w-0">
+              <p className="truncate font-bold text-oshica-text">
+                {item.title}
+              </p>
+              <p className="mt-1 text-xs text-oshica-primary">
+                開催日：{item.event_date ?? "未設定"}
+              </p>
+              {item.deadline && (
+                <p className="mt-1 text-xs text-oshica-primary">
+                  締切：{item.deadline}
+                </p>
+              )}
+            </div>
+
+            <ChevronRight className="h-5 w-5 shrink-0 text-oshica-primary" />
+          </Link>
+        ))}
+      </OshiPreviewSection>
+
+      <OshiPreviewSection
+        title="グッズ"
+        listHref="/goods"
+        emptyTitle="グッズを登録しましょう"
+        emptyDescription="右下の＋から追加できます"
+        hasItems={latestGoods.length > 0}
+      >
+        {latestGoods.map((item: any) => (
+          <Link
+            key={item.id}
+            href={`/goods/${item.id}/edit`}
+            className="flex items-center justify-between rounded-3xl border border-oshica-border bg-white p-4 shadow-sm"
+          >
+            <div className="min-w-0">
+              <p className="truncate font-bold text-oshica-text">
+                {item.name}
+              </p>
+              <p className="mt-1 text-sm font-black text-oshica-secondary">
+                {item.price
+                  ? `¥${Number(item.price).toLocaleString("ja-JP")}`
+                  : "金額未設定"}
+              </p>
+
+              {item.release_date && (
+                <p className="mt-1 text-xs text-oshica-primary">
+                  発売日：{item.release_date}
+                </p>
+              )}
+
+              <span className="mt-2 inline-flex rounded-full bg-oshica-bg px-2 py-1 text-[10px] font-bold text-oshica-secondary">
+                {item.status ?? "未予約"}
+              </span>
+            </div>
+
+            <ChevronRight className="h-5 w-5 shrink-0 text-oshica-primary" />
+          </Link>
+        ))}
+      </OshiPreviewSection>
+
+      <OshiPreviewSection
+        title="当落"
+        listHref="/results"
+        emptyTitle="当落を登録しましょう"
+        emptyDescription="応募結果を登録するとここに表示されます"
+        hasItems={latestResults.length > 0}
+      >
+        {latestResults.map((item: any) => (
+          <Link
+            key={item.id}
+            href={`/results/${item.id}`}
+            className="flex items-center justify-between rounded-3xl border border-oshica-border bg-white p-4 shadow-sm"
+          >
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-oshica-bg">
+                <Trophy className="h-5 w-5 text-oshica-primary" />
+              </div>
+
+              <div className="min-w-0">
+                <p className="truncate font-bold text-oshica-text">
+                  {item.source_type ?? "当落記録"}
+                </p>
+
+                {item.announced_at && (
                   <p className="mt-1 text-xs text-oshica-primary">
-                    開催日：{item.event_date ?? "未設定"}
+                    発表日：{item.announced_at}
                   </p>
-                  {item.deadline && (
-                    <p className="mt-1 text-xs text-oshica-primary">
-                      締切：{item.deadline}
-                    </p>
-                  )}
-                </div>
+                )}
 
-                <ChevronRight className="h-5 w-5 text-oshica-primary" />
-              </Link>
-            ))
-          ) : (
-            <div className="rounded-3xl border border-dashed border-oshica-border bg-white p-6 text-center">
-              <p className="font-bold text-oshica-text">
-                イベントを登録しましょう
-              </p>
-              <p className="mt-1 text-sm text-oshica-primary">
-                右下の＋から追加できます
-              </p>
+                {item.notes && (
+                  <p className="mt-1 line-clamp-1 text-xs text-oshica-primary">
+                    {item.notes}
+                  </p>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-      </section>
 
-      <section className="mt-8">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-black text-oshica-text">グッズ</h2>
-          <Link
-            href="/goods/new"
-            className="text-xs font-bold text-oshica-primary"
-          >
-            追加する ›
+            <span
+              className={`ml-3 flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${resultClassName(
+                item.result,
+              )}`}
+            >
+              <ResultIcon result={item.result} />
+              {resultLabel(item.result)}
+            </span>
           </Link>
-        </div>
+        ))}
+      </OshiPreviewSection>
 
-        <div className="space-y-3">
-          {goods && goods.length > 0 ? (
-            goods.map((item: any) => (
-              <Link
-                key={item.id}
-                href={`/goods/${item.id}/edit`}
-                className="flex items-center justify-between rounded-3xl border border-oshica-border bg-white p-4 shadow-sm"
-              >
-                <div>
-                  <p className="font-bold text-oshica-text">{item.name}</p>
-                  <p className="mt-1 text-sm font-black text-oshica-secondary">
-                    {item.price
-                      ? `¥${Number(item.price).toLocaleString("ja-JP")}`
-                      : "金額未設定"}
+      <OshiPreviewSection
+        title="支出"
+        listHref="/expenses"
+        emptyTitle="支出を登録しましょう"
+        emptyDescription="推し活の支出を記録できます"
+        hasItems={latestExpenses.length > 0}
+      >
+        {latestExpenses.map((item: any) => (
+          <Link
+            key={item.id}
+            href={`/expenses/${item.id}`}
+            className="flex items-center justify-between rounded-3xl border border-oshica-border bg-white p-4 shadow-sm"
+          >
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-oshica-bg">
+                <Wallet className="h-5 w-5 text-oshica-primary" />
+              </div>
+
+              <div className="min-w-0">
+                <p className="truncate font-bold text-oshica-text">
+                  {item.title}
+                </p>
+                <p className="mt-1 text-sm font-black text-oshica-secondary">
+                  ¥{Number(item.amount).toLocaleString("ja-JP")}
+                </p>
+                {item.spent_at && (
+                  <p className="mt-1 text-xs text-oshica-primary">
+                    日付：{item.spent_at}
                   </p>
-
-                  {item.release_date && (
-                    <p className="mt-1 text-xs text-oshica-primary">
-                      発売日：{item.release_date}
-                    </p>
-                  )}
-
-                  <span className="mt-2 inline-flex rounded-full bg-oshica-bg px-2 py-1 text-[10px] font-bold text-oshica-secondary">
-                    {item.status ?? "未予約"}
-                  </span>
-                </div>
-
-                <ChevronRight className="h-5 w-5 text-oshica-primary" />
-              </Link>
-            ))
-          ) : (
-            <div className="rounded-3xl border border-dashed border-oshica-border bg-white p-6 text-center">
-              <p className="font-bold text-oshica-text">
-                グッズを登録しましょう
-              </p>
-              <p className="mt-1 text-sm text-oshica-primary">
-                右下の＋から追加できます
-              </p>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-      </section>
+
+            <ChevronRight className="h-5 w-5 shrink-0 text-oshica-primary" />
+          </Link>
+        ))}
+      </OshiPreviewSection>
     </main>
   );
 }

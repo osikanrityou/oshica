@@ -140,7 +140,7 @@ export default async function NewExpensePage({ searchParams }: Props) {
               <input
                 type="date"
                 name="spentAt"
-                className="mt-2 block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 flex h-12 w-full min-w-0 max-w-full appearance-none items-center rounded-2xl border border-oshica-border bg-white px-4 text-sm leading-none text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </label>
           </OshicaCard>
