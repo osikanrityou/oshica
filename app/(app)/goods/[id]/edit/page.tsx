@@ -47,7 +47,7 @@ export default async function EditGoodsPage({ params, searchParams }: Props) {
           href="/goods"
           className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-5 w-5 text-oshica-secondary" />
         </Link>
 
         <h1 className="text-lg font-black">グッズを編集</h1>
@@ -104,7 +104,7 @@ export default async function EditGoodsPage({ params, searchParams }: Props) {
               name="name"
               defaultValue={goods.name}
               required
-              className="mt-2 block h-12 w-full rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block h-12 w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
 
@@ -115,7 +115,7 @@ export default async function EditGoodsPage({ params, searchParams }: Props) {
               name="price"
               type="number"
               defaultValue={goods.price ?? ""}
-              className="mt-2 block h-12 w-full rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block h-12 w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
         </OshicaCard>
@@ -128,7 +128,7 @@ export default async function EditGoodsPage({ params, searchParams }: Props) {
               type="date"
               name="deadline"
               defaultValue={goods.deadline ?? ""}
-              className="mt-2 block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 flex h-12 w-full min-w-0 max-w-full appearance-none items-center rounded-2xl border border-oshica-border bg-white px-4 text-sm leading-none text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
 
@@ -139,7 +139,7 @@ export default async function EditGoodsPage({ params, searchParams }: Props) {
               type="date"
               name="releaseDate"
               defaultValue={goods.release_date ?? ""}
-              className="mt-2 block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 flex h-12 w-full min-w-0 max-w-full appearance-none items-center rounded-2xl border border-oshica-border bg-white px-4 text-sm leading-none text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
 
@@ -149,7 +149,7 @@ export default async function EditGoodsPage({ params, searchParams }: Props) {
             <select
               name="status"
               defaultValue={goods.status ?? "未予約"}
-              className="mt-2 block h-12 w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block h-12 w-full min-w-0 appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             >
               <option>未予約</option>
               <option>予約済み</option>
@@ -165,20 +165,23 @@ export default async function EditGoodsPage({ params, searchParams }: Props) {
             <textarea
               name="memo"
               defaultValue={goods.memo ?? ""}
-              rows={5}
-              className="mt-2 block w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              rows={4}
+              className="mt-2 block w-full min-w-0 resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
         </OshicaCard>
 
-        <div className="flex items-center justify-between">
-          <Link href="/goods" className="font-bold text-oshica-primary">
+        <div className="flex items-center justify-between gap-3 pt-2">
+          <Link
+            href="/goods"
+            className="rounded-full px-4 py-2 text-sm font-bold text-oshica-primary"
+          >
             キャンセル
           </Link>
 
           <button
             type="submit"
-            className="rounded-full bg-oshica-primary px-8 py-3 font-bold text-white"
+            className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95"
           >
             保存する
           </button>

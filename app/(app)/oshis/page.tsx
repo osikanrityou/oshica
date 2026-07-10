@@ -1,25 +1,45 @@
-import {
-  CalendarDays,
-  ChevronRight,
-  Droplet,
-  Package,
-  PawPrint,
-  Plus,
-} from "lucide-react";
-import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
+import { ChevronRight, PawPrint, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaEmptyState } from "@/components/oshica/OshicaEmptyState";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
+import { PLAN_LIMITS } from "@/lib/plans";
+import { getCurrentPlan } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
   title: "推し一覧",
 };
 
-const FREE_PER_OSHI_LIMIT = 3;
+function getDaysLeft(dateText: string) {
+  const today = new Date();
+  const target = new Date(dateText);
+
+  today.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+
+  return Math.ceil(
+    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+  );
+}
+
+function deadlineText(dateText: string) {
+  const days = getDaysLeft(dateText);
+
+  if (days === 0) return "今日";
+  if (days > 0) return `あと${days}日`;
+
+  return `${Math.abs(days)}日前`;
+}
+
+function limitText(count: number, limit: number | null) {
+  if (limit === null) return `${count}件`;
+
+  return `${count}/${limit}`;
+}
 
 export default async function OshiPage() {
   const supabase = (await createClient()) as any;
@@ -29,6 +49,23 @@ export default async function OshiPage() {
   } = await supabase.auth.getUser();
 
   if (!user) return null;
+
+  const currentPlan = await getCurrentPlan();
+  const planLimits = PLAN_LIMITS[currentPlan];
+
+  const planLabel =
+    currentPlan === "premium"
+      ? "Premium"
+      : currentPlan === "plus"
+        ? "Plus"
+        : "Free";
+
+  const pageDescription =
+    currentPlan === "premium"
+      ? "Premiumプランでは推しを無制限で登録できます"
+      : `${planLabel}プランでは推し${planLimits.oshiLimit}人まで登録できます`;
+
+  const today = new Date().toISOString().slice(0, 10);
 
   const { data: oshis } = await supabase
     .from("oshis")
@@ -46,20 +83,22 @@ export default async function OshiPage() {
     .select("id, oshi_id")
     .eq("user_id", user.id);
 
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .slice(0, 10);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    .toISOString()
-    .slice(0, 10);
+  const { data: lotteryResults } = await supabase
+    .from("lottery_results")
+    .select("id, oshi_id")
+    .eq("user_id", user.id);
 
   const { data: expenses } = await supabase
     .from("expenses")
-    .select("amount, oshi_id")
+    .select("id, oshi_id")
+    .eq("user_id", user.id);
+
+  const { data: schedules } = await supabase
+    .from("upcoming_deadlines")
+    .select("*")
     .eq("user_id", user.id)
-    .gte("spent_at", monthStart)
-    .lte("spent_at", monthEnd);
+    .gte("date", today)
+    .order("date", { ascending: true });
 
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
@@ -78,7 +117,7 @@ export default async function OshiPage() {
       <OshicaPageHeader
         label="Oshi"
         title="推し一覧"
-        description="Freeプランでは推し3人まで登録できます"
+        description={pageDescription}
         icon={<PawPrint className="h-5 w-5" />}
       />
 
@@ -105,16 +144,24 @@ export default async function OshiPage() {
               goods?.filter((item: any) => item.oshi_id === oshi.id).length ??
               0;
 
-            const expenseTotal =
-              expenses
-                ?.filter((item: any) => item.oshi_id === oshi.id)
-                .reduce((sum: number, item: any) => sum + item.amount, 0) ?? 0;
+            const lotteryResultCount =
+              lotteryResults?.filter(
+                (item: any) => item.oshi_id === oshi.id,
+              ).length ?? 0;
+
+            const expenseCount =
+              expenses?.filter((item: any) => item.oshi_id === oshi.id)
+                .length ?? 0;
+
+            const nextOshiSchedule = schedules?.find(
+              (item: any) => item.oshi_id === oshi.id,
+            );
 
             return (
               <Link key={oshi.id} href={`/oshis/${oshi.id}`} className="block">
                 <OshicaCard className="p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:scale-[0.98]">
                   <div className="flex items-center gap-4">
-                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-oshica-bg ring-2 ring-white shadow-sm">
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-oshica-bg shadow-sm ring-2 ring-white">
                       {oshi.image_url ? (
                         <Image
                           src={oshi.image_url}
@@ -140,20 +187,26 @@ export default async function OshiPage() {
                         </p>
                       )}
 
-                      <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-oshica-primary">
-                        <span className="flex items-center gap-1">
-                          <CalendarDays className="h-3.5 w-3.5" />
-                          予定 {eventCount}/{FREE_PER_OSHI_LIMIT}
+                      <div className="mt-2 flex flex-nowrap gap-2 whitespace-nowrap text-[11px] font-bold text-oshica-primary">
+                        <span>
+                          イベント{" "}
+                          {limitText(eventCount, planLimits.itemLimit)}
                         </span>
 
-                        <span className="flex items-center gap-1">
-                          <Package className="h-3.5 w-3.5" />
-                          グッズ {goodsCount}/{FREE_PER_OSHI_LIMIT}
+                        <span>
+                          グッズ {limitText(goodsCount, planLimits.itemLimit)}
                         </span>
 
-                        <span className="flex items-center gap-1">
-                          <Droplet className="h-3.5 w-3.5" />¥
-                          {expenseTotal.toLocaleString()}
+                        <span>
+                          当落{" "}
+                          {limitText(
+                            lotteryResultCount,
+                            planLimits.itemLimit,
+                          )}
+                        </span>
+
+                        <span>
+                          支出 {limitText(expenseCount, planLimits.itemLimit)}
                         </span>
                       </div>
                     </div>
@@ -162,6 +215,28 @@ export default async function OshiPage() {
                       <ChevronRight className="h-4 w-4 text-oshica-primary" />
                     </div>
                   </div>
+
+                  {nextOshiSchedule && (
+                    <div className="mt-4 rounded-2xl bg-oshica-bg px-4 py-3">
+                      <p className="text-[11px] font-bold text-oshica-primary">
+                        次の予定
+                      </p>
+
+                      <div className="mt-1 flex items-center justify-between gap-3">
+                        <p className="truncate text-sm font-black text-oshica-text">
+                          {nextOshiSchedule.title}
+                        </p>
+
+                        <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-black text-oshica-secondary">
+                          {deadlineText(nextOshiSchedule.date)}
+                        </span>
+                      </div>
+
+                      <p className="mt-1 text-xs font-medium text-oshica-primary">
+                        {nextOshiSchedule.label}：{nextOshiSchedule.date}
+                      </p>
+                    </div>
+                  )}
                 </OshicaCard>
               </Link>
             );

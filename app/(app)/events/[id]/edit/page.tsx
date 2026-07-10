@@ -108,7 +108,7 @@ export default async function EditEventPage({ params, searchParams }: Props) {
             <select
               name="oshiId"
               defaultValue={event.oshi_id ?? ""}
-              className="mt-2 block h-12 w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block h-12 w-full min-w-0 appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             >
               <option value="">選択なし</option>
 
@@ -129,7 +129,7 @@ export default async function EditEventPage({ params, searchParams }: Props) {
               name="title"
               defaultValue={event.title}
               required
-              className="mt-2 block h-12 w-full rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 block h-12 w-full min-w-0 rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
         </OshicaCard>
@@ -144,7 +144,7 @@ export default async function EditEventPage({ params, searchParams }: Props) {
               type="date"
               name="eventDate"
               defaultValue={event.event_date ?? ""}
-              className="mt-2 block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 flex h-12 w-full min-w-0 max-w-full appearance-none items-center rounded-2xl border border-oshica-border bg-white px-4 text-sm leading-none text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
 
@@ -155,7 +155,7 @@ export default async function EditEventPage({ params, searchParams }: Props) {
               type="date"
               name="deadline"
               defaultValue={event.deadline ?? ""}
-              className="mt-2 block h-12 w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              className="mt-2 flex h-12 w-full min-w-0 max-w-full appearance-none items-center rounded-2xl border border-oshica-border bg-white px-4 text-sm leading-none text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
         </OshicaCard>
@@ -167,20 +167,23 @@ export default async function EditEventPage({ params, searchParams }: Props) {
             <textarea
               name="memo"
               defaultValue={event.memo ?? ""}
-              rows={5}
-              className="mt-2 block w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+              rows={4}
+              className="mt-2 block w-full min-w-0 resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             />
           </label>
         </OshicaCard>
 
-        <div className="flex items-center justify-between">
-          <Link href="/events" className="font-bold text-oshica-primary">
+        <div className="flex items-center justify-between gap-3 pt-2">
+          <Link
+            href="/events"
+            className="rounded-full px-4 py-2 text-sm font-bold text-oshica-primary"
+          >
             キャンセル
           </Link>
 
           <button
             type="submit"
-            className="rounded-full bg-oshica-primary px-8 py-3 font-bold text-white"
+            className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95"
           >
             保存する
           </button>
