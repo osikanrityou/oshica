@@ -122,3 +122,40 @@ export async function syncCheckoutSession(sessionId: string) {
     { onConflict: "user_id" },
   );
 }
+
+export async function createBillingPortalSession() {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+  const supabase = (await createClient()) as any;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: subscription } = await supabaseAdmin
+    .from("subscriptions")
+    .select("stripe_customer_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const customerId = subscription?.stripe_customer_id;
+
+  if (!customerId) {
+    redirect("/settings/billing");
+  }
+
+  const session = await stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: `${appUrl}/settings/billing`,
+  });
+
+  if (!session.url) {
+    throw new Error("Stripe Customer Portalを作成できませんでした");
+  }
+
+  redirect(session.url);
+}

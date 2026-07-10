@@ -5,10 +5,46 @@ import { stripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 
+type SubscriptionPlan = "free" | "plus" | "premium";
+
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
+
+function normalizePlan(plan: unknown): SubscriptionPlan {
+  if (plan === "plus" || plan === "premium") {
+    return plan;
+  }
+
+  return "free";
+}
+
+async function upsertSubscription({
+  userId,
+  plan,
+  status,
+  customerId,
+  subscriptionId,
+}: {
+  userId: string;
+  plan: SubscriptionPlan;
+  status: string;
+  customerId: string | null;
+  subscriptionId: string | null;
+}) {
+  await supabaseAdmin.from("subscriptions").upsert(
+    {
+      user_id: userId,
+      plan,
+      status,
+      stripe_customer_id: customerId,
+      stripe_subscription_id: subscriptionId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+}
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -21,7 +57,7 @@ export async function POST(request: Request) {
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
     return NextResponse.json(
       { error: "STRIPE_WEBHOOK_SECRET が未設定です" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -31,12 +67,12 @@ export async function POST(request: Request) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET
+      process.env.STRIPE_WEBHOOK_SECRET,
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Webhook署名の検証に失敗しました" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -44,61 +80,95 @@ export async function POST(request: Request) {
     const session = event.data.object as any;
 
     const userId = session.metadata?.user_id;
-    const plan = session.metadata?.plan;
+    const plan = normalizePlan(session.metadata?.plan);
 
-    if (userId && (plan === "plus" || plan === "premium")) {
-      await supabaseAdmin.from("subscriptions").upsert(
-        {
-          user_id: userId,
-          plan,
-          status: "active",
-          stripe_customer_id: session.customer,
-          stripe_subscription_id: session.subscription,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
+    if (userId && plan !== "free") {
+      await upsertSubscription({
+        userId,
+        plan,
+        status: "active",
+        customerId:
+          typeof session.customer === "string"
+            ? session.customer
+            : session.customer?.id ?? null,
+        subscriptionId:
+          typeof session.subscription === "string"
+            ? session.subscription
+            : session.subscription?.id ?? null,
+      });
     }
   }
 
-  if (event.type === "customer.subscription.updated") {
+  if (
+    event.type === "customer.subscription.created" ||
+    event.type === "customer.subscription.updated"
+  ) {
     const subscription = event.data.object as any;
 
     const userId = subscription.metadata?.user_id;
-    const plan = subscription.metadata?.plan;
+    const plan = normalizePlan(subscription.metadata?.plan);
 
-    if (userId && (plan === "plus" || plan === "premium")) {
-      await supabaseAdmin.from("subscriptions").upsert(
-        {
-          user_id: userId,
-          plan,
-          status: subscription.status,
-          stripe_customer_id: subscription.customer,
-          stripe_subscription_id: subscription.id,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
+    if (userId) {
+      const activeStatuses = ["active", "trialing"];
+      const safePlan = activeStatuses.includes(subscription.status)
+        ? plan
+        : "free";
+
+      await upsertSubscription({
+        userId,
+        plan: safePlan,
+        status: subscription.status,
+        customerId:
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : subscription.customer?.id ?? null,
+        subscriptionId: subscription.id ?? null,
+      });
     }
   }
 
-  if (event.type === "customer.subscription.deleted") {
+  if (
+    event.type === "customer.subscription.deleted" ||
+    event.type === "customer.subscription.paused"
+  ) {
     const subscription = event.data.object as any;
 
     const userId = subscription.metadata?.user_id;
 
     if (userId) {
-      await supabaseAdmin.from("subscriptions").upsert(
-        {
-          user_id: userId,
+      await upsertSubscription({
+        userId,
+        plan: "free",
+        status: subscription.status ?? "canceled",
+        customerId:
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : subscription.customer?.id ?? null,
+        subscriptionId: subscription.id ?? null,
+      });
+    }
+  }
+
+  if (
+    event.type === "invoice.payment_failed" ||
+    event.type === "customer.subscription.pending_update_expired"
+  ) {
+    const invoice = event.data.object as any;
+
+    const subscriptionId =
+      typeof invoice.subscription === "string"
+        ? invoice.subscription
+        : invoice.subscription?.id;
+
+    if (subscriptionId) {
+      await supabaseAdmin
+        .from("subscriptions")
+        .update({
           plan: "free",
-          status: "canceled",
-          stripe_customer_id: subscription.customer,
-          stripe_subscription_id: subscription.id,
+          status: "payment_failed",
           updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
+        })
+        .eq("stripe_subscription_id", subscriptionId);
     }
   }
 

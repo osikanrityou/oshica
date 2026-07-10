@@ -4,7 +4,11 @@ import { ArrowLeft, Check, Crown, Sparkles } from "lucide-react";
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { getCurrentPlan } from "@/lib/subscription";
-import { createCheckoutSession, syncCheckoutSession } from "./actions";
+import {
+  createBillingPortalSession,
+  createCheckoutSession,
+  syncCheckoutSession,
+} from "./actions";
 
 export const metadata = { title: "料金プラン" };
 
@@ -61,6 +65,8 @@ export default async function BillingPage({ searchParams }: Props) {
         ? "Plus"
         : "Free";
 
+  const isPaidPlan = currentPlan === "plus" || currentPlan === "premium";
+
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-40 pt-6 text-oshica-text">
       <div className="mb-4">
@@ -78,6 +84,32 @@ export default async function BillingPage({ searchParams }: Props) {
         description={`現在のプラン：${currentPlanLabel}`}
         icon={<Crown className="h-5 w-5" />}
       />
+
+      {isPaidPlan ? (
+        <OshicaCard className="mt-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold text-oshica-primary">
+                サブスク管理
+              </p>
+              <p className="mt-1 text-sm leading-6 text-oshica-text">
+                解約・支払い方法の変更・請求情報の確認はStripeの管理画面で行えます。
+              </p>
+            </div>
+
+            <Crown className="h-5 w-5 shrink-0 text-oshica-primary" />
+          </div>
+
+          <form action={createBillingPortalSession}>
+            <button
+              type="submit"
+              className="mt-4 w-full rounded-full bg-oshica-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm transition active:scale-95"
+            >
+              サブスクを管理
+            </button>
+          </form>
+        </OshicaCard>
+      ) : null}
 
       {params?.checkout === "success" ? (
         <div className="mt-4 rounded-3xl bg-white p-4 text-sm font-bold text-oshica-primary shadow-sm">
