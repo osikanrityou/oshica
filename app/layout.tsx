@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "sonner";
 
@@ -15,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 const siteUrl = "https://oshica.vercel.app";
+const googleAnalyticsId = "G-6C60BVZGHR";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -130,6 +132,24 @@ export default function RootLayout({
             },
           }}
         />
+
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
+          strategy="afterInteractive"
+        />
+
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+
+            function gtag() {
+              window.dataLayer.push(arguments);
+            }
+
+            gtag("js", new Date());
+            gtag("config", "${googleAnalyticsId}");
+          `}
+        </Script>
       </body>
     </html>
   );
