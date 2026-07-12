@@ -14,20 +14,86 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = "https://oshica.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+
   title: {
-    default: "Oshica",
+    default: "推し活管理アプリ Oshica｜推し活の締切、もう忘れない。",
     template: "%s | Oshica",
   },
+
   description:
-    "推し活のグッズ予約・イベント応募・当落・支出をひとつに管理するアプリ",
+    "イベント応募・グッズ予約・当落・支出を、推しごとにまとめて管理できる推し活管理アプリです。無料ですぐに始められます。",
+
   applicationName: "Oshica",
+
+  keywords: [
+    "Oshica",
+    "推し活",
+    "推し活管理",
+    "推し活アプリ",
+    "イベント管理",
+    "グッズ管理",
+    "当落管理",
+    "支出管理",
+    "オタ活",
+    "アイドル",
+    "VTuber",
+    "アニメ",
+    "ゲーム",
+  ],
+
+  authors: [
+    {
+      name: "Oshica",
+    },
+  ],
+
+  creator: "Oshica",
+  publisher: "Oshica",
+
+  alternates: {
+    canonical: "/",
+  },
+
+  openGraph: {
+    type: "website",
+    locale: "ja_JP",
+    url: siteUrl,
+    siteName: "Oshica",
+    title: "推し活管理アプリ Oshica｜推し活の締切、もう忘れない。",
+    description:
+      "イベント応募・グッズ予約・当落・支出を、推しごとにまとめて管理できる推し活管理アプリです。",
+  },
+
+  twitter: {
+    card: "summary",
+    title: "推し活管理アプリ Oshica｜推し活の締切、もう忘れない。",
+    description:
+      "イベント応募・グッズ予約・当落・支出を、推しごとにまとめて管理できる推し活管理アプリです。",
+  },
+
+  verification: {
+    google: "A8CptqgmHZnm7g-Sb61ZE2brRpUFXFDmH1ArPjnujuw",
+  },
+
   manifest: "/manifest.webmanifest",
+
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Oshica",
   },
+
+  formatDetection: {
+    telephone: false,
+    email: false,
+    address: false,
+  },
+
+  category: "productivity",
 };
 
 export const viewport: Viewport = {
@@ -47,7 +113,7 @@ export default function RootLayout({
       lang="ja"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="flex min-h-full flex-col">
         <NuqsAdapter>{children}</NuqsAdapter>
 
         <Toaster
