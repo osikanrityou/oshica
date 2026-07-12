@@ -53,14 +53,16 @@ export default function PrivacyPage() {
             法令に基づく場合を除き、ユーザーの同意なく個人情報を第三者に提供することはありません。
           </p>
         </section>
+<section>
+  <h2 className="font-black text-oshica-text">4. 外部サービス</h2>
 
-        <section>
-          <h2 className="font-black text-oshica-text">4. 外部サービス</h2>
-          <p className="mt-2">
-            本サービスでは、認証やデータ保存のためにSupabase等の外部サービスを利用する場合があります。
-          </p>
-        </section>
-
+  <p className="mt-2">
+    本サービスでは、認証・データ保存のためにSupabase、決済のためにStripe、
+    アクセス解析のためにGoogle Analyticsを利用しています。
+    Google Analyticsでは、Cookie等を利用して利用状況を収集する場合があります。
+    取得される情報はGoogle社のプライバシーポリシーに基づいて管理されます。
+  </p>
+</section>
         <section>
           <h2 className="font-black text-oshica-text">5. 情報の削除</h2>
           <p className="mt-2">
