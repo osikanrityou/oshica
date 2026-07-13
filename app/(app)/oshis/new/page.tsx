@@ -16,6 +16,77 @@ import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { PLAN_LIMITS, isLimitReached, normalizePlan } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/client";
 
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+const IMAGE_EXTENSIONS: Record<string, "jpg" | "png" | "webp"> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+async function validateImageFile(file: File) {
+  if (!(file.type in IMAGE_EXTENSIONS)) {
+    return {
+      valid: false as const,
+      message: "JPEG・PNG・WebP形式の画像を選択してください",
+    };
+  }
+
+  if (file.size > MAX_IMAGE_SIZE) {
+    return {
+      valid: false as const,
+      message: "画像サイズは5MB以下にしてください",
+    };
+  }
+
+  const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+
+  const isJpeg =
+    bytes.length >= 3 &&
+    bytes[0] === 0xff &&
+    bytes[1] === 0xd8 &&
+    bytes[2] === 0xff;
+
+  const isPng =
+    bytes.length >= 8 &&
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47 &&
+    bytes[4] === 0x0d &&
+    bytes[5] === 0x0a &&
+    bytes[6] === 0x1a &&
+    bytes[7] === 0x0a;
+
+  const isWebp =
+    bytes.length >= 12 &&
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50;
+
+  const signatureMatches =
+    (file.type === "image/jpeg" && isJpeg) ||
+    (file.type === "image/png" && isPng) ||
+    (file.type === "image/webp" && isWebp);
+
+  if (!signatureMatches) {
+    return {
+      valid: false as const,
+      message: "画像ファイルの形式を確認できませんでした",
+    };
+  }
+
+  return {
+    valid: true as const,
+    extension: IMAGE_EXTENSIONS[file.type],
+  };
+}
+
 export default function NewOshiPage() {
   const router = useRouter();
   const [supabase] = useState(() => createClient() as any);
@@ -72,18 +143,27 @@ export default function NewOshiPage() {
     };
   }, [previewUrl]);
 
-  const handleImageChange = (file: File | null) => {
-    setImageFile(file);
-
+  const handleImageChange = async (file: File | null) => {
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
 
     if (!file) {
+      setImageFile(null);
       setPreviewUrl(null);
       return;
     }
 
+    const validation = await validateImageFile(file);
+
+    if (!validation.valid) {
+      setImageFile(null);
+      setPreviewUrl(null);
+      toast.error(validation.message);
+      return;
+    }
+
+    setImageFile(file);
     setPreviewUrl(URL.createObjectURL(file));
   };
 
@@ -116,12 +196,20 @@ export default function NewOshiPage() {
       let imageUrl: string | null = null;
 
       if (imageFile) {
-        const ext = imageFile.name.split(".").pop() || "jpg";
-        const filePath = `${user.id}/${Date.now()}.${ext}`;
+        const validation = await validateImageFile(imageFile);
+
+        if (!validation.valid) {
+          toast.error(validation.message);
+          return;
+        }
+
+        const filePath = `${user.id}/${Date.now()}.${validation.extension}`;
 
         const { error: uploadError } = await supabase.storage
           .from("oshi-images")
-          .upload(filePath, imageFile);
+          .upload(filePath, imageFile, {
+            contentType: imageFile.type,
+          });
 
         if (uploadError) {
           toast.error(uploadError.message);
@@ -240,18 +328,21 @@ export default function NewOshiPage() {
 
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 className="hidden"
                 disabled={loading}
-                onChange={(event) =>
-                  handleImageChange(event.target.files?.[0] ?? null)
-                }
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  event.currentTarget.value = "";
+                  void handleImageChange(file);
+                }}
               />
             </label>
 
             <p className="mt-3 text-sm font-black text-oshica-text">
               推し画像
             </p>
+
             <p className="mt-1 text-xs font-bold text-oshica-primary">
               タップして画像を選択できます
             </p>
@@ -262,6 +353,7 @@ export default function NewOshiPage() {
               <span className="text-sm font-bold text-oshica-text">
                 推しの名前
               </span>
+
               <input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
@@ -275,6 +367,7 @@ export default function NewOshiPage() {
               <span className="text-sm font-bold text-oshica-text">
                 ジャンル
               </span>
+
               <input
                 value={category}
                 onChange={(event) => setCategory(event.target.value)}
@@ -288,6 +381,7 @@ export default function NewOshiPage() {
           <OshicaCard>
             <label className="block">
               <span className="text-sm font-bold text-oshica-text">メモ</span>
+
               <textarea
                 value={memo}
                 onChange={(event) => setMemo(event.target.value)}
