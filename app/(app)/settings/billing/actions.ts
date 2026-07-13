@@ -46,6 +46,12 @@ export async function createCheckoutSession(formData: FormData) {
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer_email: user.email,
+    payment_method_types: ["card"],
+    payment_method_options: {
+      card: {
+        request_three_d_secure: "any",
+      },
+    },
     line_items: [
       {
         price: priceId,
