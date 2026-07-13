@@ -6,6 +6,7 @@ import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { createClient } from "@/lib/supabase/server";
 import { createEvent } from "../actions";
+import { SubmitButton } from "@/components/shared/SubmitButton";
 
 type Props = {
   searchParams: Promise<{
@@ -153,22 +154,19 @@ export default async function NewEventPage({ searchParams }: Props) {
               />
             </label>
           </OshicaCard>
+<div className="flex items-center justify-between gap-3 pt-2">
+  <Link
+    href="/events"
+    className="rounded-full px-4 py-2 text-sm font-bold text-oshica-primary"
+  >
+    キャンセル
+  </Link>
 
-          <div className="flex items-center justify-between gap-3 pt-2">
-            <Link
-              href="/events"
-              className="rounded-full px-4 py-2 text-sm font-bold text-oshica-primary"
-            >
-              キャンセル
-            </Link>
-
-            <button
-              type="submit"
-              className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95"
-            >
-              登録する
-            </button>
-          </div>
+  <SubmitButton
+    idleLabel="登録する"
+    pendingLabel="登録中..."
+  />
+</div>
         </form>
       )}
     </main>

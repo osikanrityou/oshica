@@ -4,17 +4,23 @@ import { ChevronLeft, Crown, Trophy } from "lucide-react";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { DeleteButton } from "@/components/shared/DeleteButton";
+import { SubmitButton } from "@/components/shared/SubmitButton";
 import { createClient } from "@/lib/supabase/server";
 import { deleteLotteryResult, updateLotteryResult } from "../actions";
 
 type Props = {
-  params: Promise<{ id: string }>;
+  params: Promise<{
+    id: string;
+  }>;
   searchParams: Promise<{
     error?: string;
   }>;
 };
 
-export default async function EditResultPage({ params, searchParams }: Props) {
+export default async function EditResultPage({
+  params,
+  searchParams,
+}: Props) {
   const { id } = await params;
   const { error } = await searchParams;
 
@@ -24,7 +30,9 @@ export default async function EditResultPage({ params, searchParams }: Props) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) {
+    redirect("/login");
+  }
 
   const { data: item } = await supabase
     .from("lottery_results")
@@ -33,7 +41,9 @@ export default async function EditResultPage({ params, searchParams }: Props) {
     .eq("user_id", user.id)
     .single();
 
-  if (!item) redirect("/results");
+  if (!item) {
+    redirect("/results");
+  }
 
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
@@ -94,10 +104,11 @@ export default async function EditResultPage({ params, searchParams }: Props) {
           <OshicaCard className="space-y-4">
             <label className="block">
               <span className="text-sm font-bold text-oshica-text">結果</span>
+
               <select
                 name="result"
                 defaultValue={item.result ?? "pending"}
-                className="mt-2 block w-full rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 block h-12 w-full min-w-0 appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               >
                 <option value="pending">未発表</option>
                 <option value="won">当選</option>
@@ -108,11 +119,12 @@ export default async function EditResultPage({ params, searchParams }: Props) {
 
             <label className="block">
               <span className="text-sm font-bold text-oshica-text">発表日</span>
+
               <input
                 type="date"
                 name="announcedAt"
                 defaultValue={item.announced_at ?? ""}
-                className="mt-2 block w-full min-w-0 max-w-full appearance-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 flex h-12 w-full min-w-0 max-w-full appearance-none items-center rounded-2xl border border-oshica-border bg-white px-4 text-sm leading-none text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </label>
           </OshicaCard>
@@ -120,11 +132,12 @@ export default async function EditResultPage({ params, searchParams }: Props) {
           <OshicaCard>
             <label className="block">
               <span className="text-sm font-bold text-oshica-text">メモ</span>
+
               <textarea
                 name="notes"
                 rows={5}
                 defaultValue={item.notes ?? ""}
-                className="mt-2 block w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                className="mt-2 block w-full min-w-0 resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
               />
             </label>
           </OshicaCard>
@@ -137,12 +150,10 @@ export default async function EditResultPage({ params, searchParams }: Props) {
               キャンセル
             </Link>
 
-            <button
-              type="submit"
-              className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95"
-            >
-              保存する
-            </button>
+            <SubmitButton
+              idleLabel="保存する"
+              pendingLabel="保存中..."
+            />
           </div>
         </form>
 

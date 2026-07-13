@@ -32,27 +32,25 @@ export default async function ResultsPage({ searchParams }: Props) {
   let selectedOshi: { id: string; name: string } | null = null;
 
   if (user) {
-    if (oshiId) {
-      const { data } = await supabase
-        .from("oshis")
-        .select("id, name")
-        .eq("id", oshiId)
-        .eq("user_id", user.id)
-        .single();
+    const repo = new LotteryRepository(supabase);
 
-      selectedOshi = data;
-    }
+    const [selectedOshiResult, itemsResult] = await Promise.all([
+      oshiId
+        ? supabase
+            .from("oshis")
+            .select("id, name")
+            .eq("id", oshiId)
+            .eq("user_id", user.id)
+            .single()
+        : Promise.resolve({ data: null }),
+      repo.listByUser(user.id).catch(() => []),
+    ]);
 
-    try {
-      const repo = new LotteryRepository(supabase);
-      const allItems = await repo.listByUser(user.id);
+    selectedOshi = selectedOshiResult.data;
 
-      items = oshiId
-        ? allItems.filter((item: any) => item.oshi_id === oshiId)
-        : allItems;
-    } catch {
-      items = [];
-    }
+    items = oshiId
+      ? itemsResult.filter((item: any) => item.oshi_id === oshiId)
+      : itemsResult;
   }
 
   return (

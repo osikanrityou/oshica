@@ -4,6 +4,7 @@ import { ArrowLeft, Crown, Trophy } from "lucide-react";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
+import { SubmitButton } from "@/components/shared/SubmitButton";
 import { createClient } from "@/lib/supabase/server";
 import { createLotteryResult } from "../actions";
 
@@ -153,12 +154,10 @@ export default async function NewResultPage({ searchParams }: Props) {
               キャンセル
             </Link>
 
-            <button
-              type="submit"
-              className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95"
-            >
-              登録する
-            </button>
+            <SubmitButton
+              idleLabel="登録する"
+              pendingLabel="登録中..."
+            />
           </div>
         </form>
       )}

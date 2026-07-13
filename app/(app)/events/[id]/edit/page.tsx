@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeft, CalendarDays, Crown } from "lucide-react";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
+import { SubmitButton } from "@/components/shared/SubmitButton";
 import { createClient } from "@/lib/supabase/server";
 import { updateEvent } from "../../actions";
 
@@ -181,12 +182,10 @@ export default async function EditEventPage({ params, searchParams }: Props) {
             キャンセル
           </Link>
 
-          <button
-            type="submit"
-            className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95"
-          >
-            保存する
-          </button>
+          <SubmitButton
+            idleLabel="保存する"
+            pendingLabel="保存中..."
+          />
         </div>
       </form>
     </main>

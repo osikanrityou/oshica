@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -10,10 +11,10 @@ import {
   Wallet,
 } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/server";
 import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { getCurrentPlan } from "@/lib/subscription";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "ホーム" };
 
@@ -34,16 +35,19 @@ function deadlineText(dateText: string) {
 
   if (days === 0) return "今日";
   if (days > 0) return `あと${days}日`;
+
   return `${Math.abs(days)}日前`;
 }
 
 function limitText(count: number, limit: number | null) {
   if (limit === null) return `${count}件`;
+
   return `${count}/${limit}`;
 }
 
 function limitOnlyText(limit: number | null) {
   if (limit === null) return "無制限";
+
   return `${limit}/${limit}`;
 }
 
@@ -54,9 +58,58 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) {
+    redirect("/login");
+  }
 
-  const currentPlan = await getCurrentPlan();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [
+    currentPlan,
+    { data: oshis },
+    { data: schedules },
+    { data: events },
+    { data: goods },
+    { data: lotteryResults },
+    { data: expenses },
+  ] = await Promise.all([
+    getCurrentPlan(),
+
+    supabase
+      .from("oshis")
+      .select("id, name, memo, image_url")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+
+    supabase
+      .from("upcoming_deadlines")
+      .select("id, title, date, label, href, oshi_id")
+      .eq("user_id", user.id)
+      .gte("date", today)
+      .order("date", { ascending: true }),
+
+    supabase
+      .from("events")
+      .select("id, oshi_id")
+      .eq("user_id", user.id),
+
+    supabase
+      .from("goods")
+      .select("id, name, price, deadline, release_date, status, oshi_id")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+
+    supabase
+      .from("lottery_results")
+      .select("id, oshi_id")
+      .eq("user_id", user.id),
+
+    supabase
+      .from("expenses")
+      .select("id, amount, oshi_id, spent_at")
+      .eq("user_id", user.id),
+  ]);
+
   const planLimits = PLAN_LIMITS[currentPlan];
 
   const planLabel =
@@ -75,42 +128,6 @@ export default async function DashboardPage() {
   const usageLimitText =
     planLimits.itemLimit === null ? "無制限" : `各${planLimits.itemLimit}件まで`;
 
-  const today = new Date().toISOString().slice(0, 10);
-
-  const { data: oshis } = await supabase
-    .from("oshis")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  const { data: schedules } = await supabase
-    .from("upcoming_deadlines")
-    .select("*")
-    .eq("user_id", user.id)
-    .gte("date", today)
-    .order("date", { ascending: true });
-
-  const { data: events } = await supabase
-    .from("events")
-    .select("id, oshi_id")
-    .eq("user_id", user.id);
-
-  const { data: goods } = await supabase
-    .from("goods")
-    .select("id, name, price, deadline, release_date, status, oshi_id")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  const { data: lotteryResults } = await supabase
-    .from("lottery_results")
-    .select("id, oshi_id")
-    .eq("user_id", user.id);
-
-  const { data: expenses } = await supabase
-    .from("expenses")
-    .select("id, amount, oshi_id, spent_at")
-    .eq("user_id", user.id);
-
   const now = new Date();
 
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -124,16 +141,17 @@ export default async function DashboardPage() {
   const monthlyExpenses =
     expenses?.filter((item: any) => {
       const spentAt = item.spent_at;
+
       return spentAt && spentAt >= monthStart && spentAt <= monthEnd;
     }) ?? [];
 
-  const monthlyExpenseTotal =
-    monthlyExpenses.reduce(
-      (sum: number, item: any) => sum + item.amount,
-      0,
-    ) ?? 0;
+  const monthlyExpenseTotal = monthlyExpenses.reduce(
+    (sum: number, item: any) => sum + Number(item.amount ?? 0),
+    0,
+  );
 
   const nearestSchedule = schedules?.[0];
+
   const nearestScheduleOshi = nearestSchedule
     ? oshis?.find((oshi: any) => oshi.id === nearestSchedule.oshi_id)
     : null;
@@ -200,7 +218,7 @@ export default async function DashboardPage() {
             今月の支出
           </p>
           <p className="mt-1 text-lg font-black text-oshica-text">
-            ¥{monthlyExpenseTotal.toLocaleString()}
+            ¥{monthlyExpenseTotal.toLocaleString("ja-JP")}
           </p>
         </Link>
 
@@ -221,6 +239,7 @@ export default async function DashboardPage() {
             <p className="text-xs font-black text-oshica-primary">
               {planLabel}
             </p>
+
             <p className="mt-1 text-sm font-black text-oshica-text">
               推し {oshis?.length ?? 0}
               {planLimits.oshiLimit === null
@@ -280,6 +299,7 @@ export default async function DashboardPage() {
       <section className="mt-7">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-black text-oshica-text">次の締切</h2>
+
           <Link
             href="/calendar"
             className="text-xs font-bold text-oshica-primary"
@@ -299,9 +319,11 @@ export default async function DashboardPage() {
                   {nearestSchedule.label}
                   {nearestScheduleOshi ? ` / ${nearestScheduleOshi.name}` : ""}
                 </p>
+
                 <p className="mt-2 truncate text-lg font-black">
                   {nearestSchedule.title}
                 </p>
+
                 <p className="mt-1 text-sm text-oshica-bg">
                   {nearestSchedule.date}
                 </p>
@@ -317,6 +339,7 @@ export default async function DashboardPage() {
             <p className="font-bold text-oshica-text">
               近い予定はありません
             </p>
+
             <p className="mt-1 text-sm text-oshica-primary">
               予定を追加するとここに表示されます
             </p>
@@ -327,6 +350,7 @@ export default async function DashboardPage() {
       <section className="mt-8">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-black text-oshica-text">推し一覧</h2>
+
           <Link
             href="/oshis/new"
             className="text-xs font-bold text-oshica-primary"
@@ -366,15 +390,19 @@ export default async function DashboardPage() {
                 >
                   <div className="rounded-[2rem] bg-white p-5 shadow-sm transition-all duration-200 active:scale-[0.98]">
                     <div className="flex items-center gap-4">
-                      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-oshica-bg ring-2 ring-white shadow-sm">
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-oshica-bg shadow-sm ring-2 ring-white">
                         {oshi.image_url ? (
-                          <img
+                          <Image
                             src={oshi.image_url}
                             alt={oshi.name ?? "推し"}
-                            className="h-full w-full object-cover"
+                            fill
+                            sizes="64px"
+                            className="object-cover"
                           />
                         ) : (
-                          <PawPrint className="h-7 w-7 text-oshica-primary" />
+                          <div className="flex h-full w-full items-center justify-center">
+                            <PawPrint className="h-7 w-7 text-oshica-primary" />
+                          </div>
                         )}
                       </div>
 
@@ -394,12 +422,15 @@ export default async function DashboardPage() {
                             イベント{" "}
                             {limitText(oshiEvents, planLimits.itemLimit)}
                           </span>
+
                           <span>
                             グッズ {limitText(oshiGoods, planLimits.itemLimit)}
                           </span>
+
                           <span>
                             当落 {limitText(oshiResults, planLimits.itemLimit)}
                           </span>
+
                           <span>
                             支出{" "}
                             {limitText(oshiExpenses, planLimits.itemLimit)}
@@ -417,14 +448,17 @@ export default async function DashboardPage() {
                         <p className="text-[11px] font-bold text-oshica-primary">
                           次の予定
                         </p>
+
                         <div className="mt-1 flex items-center justify-between gap-3">
                           <p className="truncate text-sm font-black text-oshica-text">
                             {nextOshiSchedule.title}
                           </p>
+
                           <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-black text-oshica-secondary">
                             {deadlineText(nextOshiSchedule.date)}
                           </span>
                         </div>
+
                         <p className="mt-1 text-xs font-medium text-oshica-primary">
                           {nextOshiSchedule.label}：{nextOshiSchedule.date}
                         </p>
@@ -439,6 +473,7 @@ export default async function DashboardPage() {
               <p className="font-bold text-oshica-text">
                 まだ推しが登録されていません
               </p>
+
               <p className="mt-1 text-sm text-oshica-primary">
                 最初の推しを追加しましょう
               </p>
@@ -452,6 +487,7 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-black text-oshica-text">
             最近追加したグッズ
           </h2>
+
           <Link href="/goods" className="text-xs font-bold text-oshica-primary">
             すべて見る ›
           </Link>
@@ -469,11 +505,13 @@ export default async function DashboardPage() {
                   <p className="truncate font-bold text-oshica-text">
                     {item.name}
                   </p>
+
                   <p className="mt-1 text-xs text-oshica-primary">
                     {item.price
                       ? `¥${Number(item.price).toLocaleString("ja-JP")}`
                       : "金額未設定"}
                   </p>
+
                   {item.deadline ? (
                     <p className="mt-1 text-xs text-oshica-primary">
                       締切：{item.deadline}

@@ -8,13 +8,13 @@ import {
 } from "lucide-react";
 
 import { SidebarMenuButton } from "@/components/layout/SidebarMenu";
-import { createClient } from "@/lib/supabase/server";
-import { deleteGoods } from "./actions";
-import { DeleteButton } from "@/components/shared/DeleteButton";
 import { OshicaCard } from "@/components/oshica/OshicaCard";
+import { OshicaEmptyState } from "@/components/oshica/OshicaEmptyState";
 import { OshicaPageHeader } from "@/components/oshica/OshicaPageHeader";
 import { OshicaSectionHeader } from "@/components/oshica/OshicaSectionHeader";
-import { OshicaEmptyState } from "@/components/oshica/OshicaEmptyState";
+import { DeleteButton } from "@/components/shared/DeleteButton";
+import { createClient } from "@/lib/supabase/server";
+import { deleteGoods } from "./actions";
 
 type Props = {
   searchParams?: Promise<{
@@ -39,6 +39,7 @@ function dateLabel(dateText: string) {
 
   if (days === 0) return "今日";
   if (days > 0) return `あと${days}日`;
+
   return `${Math.abs(days)}日前`;
 }
 
@@ -56,18 +57,11 @@ export default async function GoodsPage({ searchParams }: Props) {
     redirect("/login");
   }
 
-  const { data: selectedOshi } = oshiId
-    ? await supabase
-        .from("oshis")
-        .select("id, name")
-        .eq("id", oshiId)
-        .eq("user_id", user.id)
-        .single()
-    : { data: null };
-
   let goodsQuery = supabase
     .from("goods")
-    .select("*")
+    .select(
+      "id, name, price, deadline, release_date, status, memo, oshi_id",
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -75,9 +69,27 @@ export default async function GoodsPage({ searchParams }: Props) {
     goodsQuery = goodsQuery.eq("oshi_id", oshiId);
   }
 
-  const { data: goods } = await goodsQuery;
+  const [selectedOshiResult, goodsResult] = await Promise.all([
+    oshiId
+      ? supabase
+          .from("oshis")
+          .select("id, name")
+          .eq("id", oshiId)
+          .eq("user_id", user.id)
+          .single()
+      : Promise.resolve({ data: null }),
+    goodsQuery,
+  ]);
 
-  const pageTitle = selectedOshi ? `${selectedOshi.name}のグッズ` : "グッズ一覧";
+  const selectedOshi = selectedOshiResult.data;
+  const goods = goodsResult.data;
+
+  const deadlineCount =
+    goods?.filter((item: any) => Boolean(item.deadline)).length ?? 0;
+
+  const pageTitle = selectedOshi
+    ? `${selectedOshi.name}のグッズ`
+    : "グッズ一覧";
 
   const pageDescription = selectedOshi
     ? "この推しに登録したグッズだけを表示しています"
@@ -136,7 +148,7 @@ export default async function GoodsPage({ searchParams }: Props) {
           <p className="text-xs font-bold text-oshica-primary">締切あり</p>
 
           <p className="mt-2 text-2xl font-black text-oshica-text">
-            {goods?.filter((g: any) => g.deadline).length ?? 0}件
+            {deadlineCount}件
           </p>
         </OshicaCard>
       </section>
@@ -153,7 +165,10 @@ export default async function GoodsPage({ searchParams }: Props) {
             goods.map((item: any) => (
               <OshicaCard key={item.id}>
                 <div className="flex items-start justify-between gap-3">
-                  <Link href={`/goods/${item.id}/edit`} className="flex-1">
+                  <Link
+                    href={`/goods/${item.id}/edit`}
+                    className="min-w-0 flex-1"
+                  >
                     <p className="font-black text-[#001117]">{item.name}</p>
 
                     <p className="mt-1 text-sm font-black text-oshica-secondary">

@@ -50,7 +50,53 @@ export default async function OshiPage() {
 
   if (!user) return null;
 
-  const currentPlan = await getCurrentPlan();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [
+    currentPlan,
+    { data: oshis },
+    { data: events },
+    { data: goods },
+    { data: lotteryResults },
+    { data: expenses },
+    { data: schedules },
+  ] = await Promise.all([
+    getCurrentPlan(),
+
+    supabase
+      .from("oshis")
+      .select("id, name, memo, image_url")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+
+    supabase
+      .from("events")
+      .select("id, oshi_id")
+      .eq("user_id", user.id),
+
+    supabase
+      .from("goods")
+      .select("id, oshi_id")
+      .eq("user_id", user.id),
+
+    supabase
+      .from("lottery_results")
+      .select("id, oshi_id")
+      .eq("user_id", user.id),
+
+    supabase
+      .from("expenses")
+      .select("id, oshi_id")
+      .eq("user_id", user.id),
+
+    supabase
+      .from("upcoming_deadlines")
+      .select("id, title, date, label, oshi_id")
+      .eq("user_id", user.id)
+      .gte("date", today)
+      .order("date", { ascending: true }),
+  ]);
+
   const planLimits = PLAN_LIMITS[currentPlan];
 
   const planLabel =
@@ -64,41 +110,6 @@ export default async function OshiPage() {
     currentPlan === "premium"
       ? "Premiumプランでは推しを無制限で登録できます"
       : `${planLabel}プランでは推し${planLimits.oshiLimit}人まで登録できます`;
-
-  const today = new Date().toISOString().slice(0, 10);
-
-  const { data: oshis } = await supabase
-    .from("oshis")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  const { data: events } = await supabase
-    .from("events")
-    .select("id, oshi_id")
-    .eq("user_id", user.id);
-
-  const { data: goods } = await supabase
-    .from("goods")
-    .select("id, oshi_id")
-    .eq("user_id", user.id);
-
-  const { data: lotteryResults } = await supabase
-    .from("lottery_results")
-    .select("id, oshi_id")
-    .eq("user_id", user.id);
-
-  const { data: expenses } = await supabase
-    .from("expenses")
-    .select("id, oshi_id")
-    .eq("user_id", user.id);
-
-  const { data: schedules } = await supabase
-    .from("upcoming_deadlines")
-    .select("*")
-    .eq("user_id", user.id)
-    .gte("date", today)
-    .order("date", { ascending: true });
 
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">

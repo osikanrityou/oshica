@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Crown, PawPrint } from "lucide-react";
+import {
+  ArrowLeft,
+  Crown,
+  LoaderCircle,
+  PawPrint,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -13,7 +18,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function NewOshiPage() {
   const router = useRouter();
-  const supabase = createClient() as any;
+  const [supabase] = useState(() => createClient() as any);
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
@@ -22,9 +27,9 @@ export default function NewOshiPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
-  const [currentPlan, setCurrentPlan] = useState<"free" | "plus" | "premium">(
-    "free",
-  );
+  const [currentPlan, setCurrentPlan] = useState<
+    "free" | "plus" | "premium"
+  >("free");
   const [oshiLimit, setOshiLimit] = useState<number | null>(3);
 
   useEffect(() => {
@@ -56,11 +61,23 @@ export default function NewOshiPage() {
       setLimitReached(isLimitReached(count ?? 0, limit));
     };
 
-    checkLimit();
+    void checkLimit();
   }, [supabase]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const handleImageChange = (file: File | null) => {
     setImageFile(file);
+
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
 
     if (!file) {
       setPreviewUrl(null);
@@ -71,76 +88,81 @@ export default function NewOshiPage() {
   };
 
   const handleSave = async () => {
+    if (loading || name.trim().length === 0) return;
+
     setLoading(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user) {
-      toast.error("ログインしてください");
-      setLoading(false);
-      return;
-    }
-
-    if (limitReached) {
-      toast.error(
-        currentPlan === "premium"
-          ? "Premiumプランでは無制限で登録できます"
-          : `${currentPlan === "plus" ? "Plus" : "Free"}プランでは推しを${oshiLimit}人まで登録できます`,
-      );
-      setLoading(false);
-      return;
-    }
-
-    let imageUrl: string | null = null;
-
-    if (imageFile) {
-      const ext = imageFile.name.split(".").pop();
-      const filePath = `${user.id}/${Date.now()}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("oshi-images")
-        .upload(filePath, imageFile);
-
-      if (uploadError) {
-        toast.error(uploadError.message);
-        setLoading(false);
+      if (!user) {
+        toast.error("ログインしてください");
         return;
       }
 
-      const { data } = supabase.storage
-        .from("oshi-images")
-        .getPublicUrl(filePath);
+      if (limitReached) {
+        toast.error(
+          currentPlan === "premium"
+            ? "Premiumプランでは無制限で登録できます"
+            : `${
+                currentPlan === "plus" ? "Plus" : "Free"
+              }プランでは推しを${oshiLimit}人まで登録できます`,
+        );
+        return;
+      }
 
-      imageUrl = data.publicUrl;
+      let imageUrl: string | null = null;
+
+      if (imageFile) {
+        const ext = imageFile.name.split(".").pop() || "jpg";
+        const filePath = `${user.id}/${Date.now()}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("oshi-images")
+          .upload(filePath, imageFile);
+
+        if (uploadError) {
+          toast.error(uploadError.message);
+          return;
+        }
+
+        const { data } = supabase.storage
+          .from("oshi-images")
+          .getPublicUrl(filePath);
+
+        imageUrl = data.publicUrl;
+      }
+
+      const { error } = await supabase.from("oshis").insert({
+        name: name.trim(),
+        category: category.trim(),
+        memo: memo.trim(),
+        color: "#8ecae6",
+        image_url: imageUrl,
+        user_id: user.id,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success("推しを登録しました");
+      router.push("/oshis");
+      router.refresh();
+    } finally {
+      setLoading(false);
     }
-
-    const { error } = await supabase.from("oshis").insert({
-      name,
-      category,
-      memo,
-      color: "#8ecae6",
-      image_url: imageUrl,
-      user_id: user.id,
-    });
-
-    setLoading(false);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    toast.success("推しを登録しました");
-    router.push("/oshis");
-    router.refresh();
   };
 
   const limitText =
     oshiLimit === null
       ? "Premiumプランでは推しを無制限で登録できます"
-      : `${currentPlan === "plus" ? "Plus" : "Free"}プランでは推しを${oshiLimit}人まで登録できます`;
+      : `${
+          currentPlan === "plus" ? "Plus" : "Free"
+        }プランでは推しを${oshiLimit}人まで登録できます`;
 
   return (
     <main className="mx-auto max-w-md bg-oshica-bg px-5 pb-36 pt-8 text-oshica-text">
@@ -220,7 +242,10 @@ export default function NewOshiPage() {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => handleImageChange(e.target.files?.[0] ?? null)}
+                disabled={loading}
+                onChange={(event) =>
+                  handleImageChange(event.target.files?.[0] ?? null)
+                }
               />
             </label>
 
@@ -239,9 +264,10 @@ export default function NewOshiPage() {
               </span>
               <input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(event) => setName(event.target.value)}
                 placeholder="例：ギルガメッシュ"
-                className="mt-2 h-12 w-full rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                disabled={loading}
+                className="mt-2 h-12 w-full rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border disabled:opacity-60"
               />
             </label>
 
@@ -251,9 +277,10 @@ export default function NewOshiPage() {
               </span>
               <input
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(event) => setCategory(event.target.value)}
                 placeholder="例：ゲーム・アニメ"
-                className="mt-2 h-12 w-full rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                disabled={loading}
+                className="mt-2 h-12 w-full rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border disabled:opacity-60"
               />
             </label>
           </OshicaCard>
@@ -263,10 +290,11 @@ export default function NewOshiPage() {
               <span className="text-sm font-bold text-oshica-text">メモ</span>
               <textarea
                 value={memo}
-                onChange={(e) => setMemo(e.target.value)}
+                onChange={(event) => setMemo(event.target.value)}
                 rows={4}
                 placeholder="推しのメモを自由に記録"
-                className="mt-2 w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
+                disabled={loading}
+                className="mt-2 w-full resize-none rounded-2xl border border-oshica-border bg-white px-4 py-3 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border disabled:opacity-60"
               />
             </label>
           </OshicaCard>
@@ -274,7 +302,9 @@ export default function NewOshiPage() {
           <div className="flex items-center justify-between gap-3 pt-2">
             <Link
               href="/oshis"
-              className="rounded-full px-4 py-2 text-sm font-bold text-oshica-primary"
+              className={`rounded-full px-4 py-2 text-sm font-bold text-oshica-primary ${
+                loading ? "pointer-events-none opacity-50" : ""
+              }`}
             >
               キャンセル
             </Link>
@@ -282,10 +312,17 @@ export default function NewOshiPage() {
             <button
               type="button"
               onClick={handleSave}
-              disabled={loading || !name}
-              className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-50"
+              disabled={loading || name.trim().length === 0}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "登録中..." : "登録する"}
+              {loading ? (
+                <>
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                  登録中...
+                </>
+              ) : (
+                "登録する"
+              )}
             </button>
           </div>
         </section>

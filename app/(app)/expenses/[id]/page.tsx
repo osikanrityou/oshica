@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeft, Crown, Wallet } from "lucide-react";
 
 import { OshicaCard } from "@/components/oshica/OshicaCard";
+import { SubmitButton } from "@/components/shared/SubmitButton";
 import { createClient } from "@/lib/supabase/server";
 import { updateExpense } from "../actions";
 
@@ -25,7 +26,9 @@ export default async function EditExpensePage({ params, searchParams }: Props) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) {
+    redirect("/login");
+  }
 
   const { data: expense } = await supabase
     .from("expenses")
@@ -34,7 +37,9 @@ export default async function EditExpensePage({ params, searchParams }: Props) {
     .eq("user_id", user.id)
     .single();
 
-  if (!expense) redirect("/expenses");
+  if (!expense) {
+    redirect("/expenses");
+  }
 
   const { data: oshis } = await supabase
     .from("oshis")
@@ -107,6 +112,7 @@ export default async function EditExpensePage({ params, searchParams }: Props) {
               className="mt-2 block h-12 w-full min-w-0 appearance-none rounded-2xl border border-oshica-border bg-white px-4 text-sm text-oshica-text outline-none focus:ring-2 focus:ring-oshica-border"
             >
               <option value="">推しを選択</option>
+
               {oshis?.map((oshi: any) => (
                 <option key={oshi.id} value={oshi.id}>
                   {oshi.name}
@@ -181,12 +187,10 @@ export default async function EditExpensePage({ params, searchParams }: Props) {
             キャンセル
           </Link>
 
-          <button
-            type="submit"
-            className="rounded-full bg-oshica-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition active:scale-95"
-          >
-            保存する
-          </button>
+          <SubmitButton
+            idleLabel="保存する"
+            pendingLabel="保存中..."
+          />
         </div>
       </form>
     </main>
