@@ -1,0 +1,45 @@
+name: セキュリティ定期診断
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security-audit:
+    name: 脆弱性・品質チェック
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ソースコードを取得
+        uses: actions/checkout@v4
+
+      - name: Node.jsを準備
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: 依存関係をインストール
+        run: npm ci
+
+      - name: 高・重大レベルの脆弱性を確認
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: TypeScriptを確認
+        run: npm run typecheck
+
+      - name: ESLintを確認
+        run: npm run lint
+
+      - name: 本番ビルドを確認
+        run: npm run build
